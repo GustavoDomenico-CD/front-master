@@ -1,0 +1,10 @@
+/* Global styles — layout also uses styled-components where needed */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
