@@ -3,85 +3,143 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import styled from 'styled-components';
+import styled, { keyframes } from 'styled-components';
 
-const LoginContainer = styled.div`
+const gradientShift = keyframes`
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+`;
+
+const AppWrapper = styled.div`
   min-height: 100vh;
   display: flex;
-  align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 20px;
+  align-items: center;
+  background: linear-gradient(135deg, #b861d7, #cd7cf0, #ba78e6, #ebc7ff, #f9edff);
+  background-size: 400% 400%;
+  animation: ${gradientShift} 10s ease infinite;
 `;
 
-const LoginCard = styled.div`
-  background: white;
-  padding: 40px 32px;
-  border-radius: 16px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+const Container = styled.div<{ toggled: boolean }>`
+  width: 800px;
+  height: 500px;
+  display: flex;
+  position: relative;
+  background-color: white;
+  border-radius: 15px;
+  overflow: hidden;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+`;
+
+const FormWrapper = styled.div`
   width: 100%;
-  max-width: 420px;
+  overflow: hidden;
 `;
 
-const Title = styled.h1`
-  text-align: center;
-  margin-bottom: 8px;
-  color: #1f2937;
-  font-size: 28px;
-`;
-
-const Subtitle = styled.p`
-  text-align: center;
-  color: #6b7280;
-  margin-bottom: 32px;
-`;
-
-const Form = styled.form`
+const Form = styled.form<{ isSignUp?: boolean; toggled: boolean }>`
+  height: 100%;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  justify-content: center;
+  align-items: center;
+  transition: transform 0.5s ease-in;
+  transform: ${({ isSignUp, toggled }) => {
+    if (isSignUp) return toggled ? "translateX(0)" : "translateX(-100%)";
+    return toggled ? "translateX(100%)" : "translateX(0)";
+  }};
 `;
 
-const InputGroup = styled.div`
+const Title = styled.h2`
+  font-size: 30px;
+  margin-bottom: 20px;
+`;
+
+const Text = styled.span`
+  font-size: 18px;
+  margin-bottom: 15px;
+`;
+
+const InputWrapper = styled.div`
+  width: 300px;
+  height: 50px;
+  margin-bottom: 10px;
   display: flex;
-  flex-direction: column;
+  justify-content: center;
+  align-items: center;
   gap: 8px;
-`;
+  padding: 0 15px;
+  background-color: #eee2f7;
+  border-radius: 6px;
 
-const Label = styled.label`
-  font-weight: 600;
-  color: #374151;
-  font-size: 14px;
-`;
-
-const Input = styled.input`
-  padding: 14px 16px;
-  border: 2px solid #e5e7eb;
-  border-radius: 10px;
-  font-size: 16px;
-  transition: all 0.2s;
-
-  &:focus {
+  input {
+    border: none;
     outline: none;
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+    width: 100%;
+    height: 100%;
+    background-color: inherit;
+    font-size: 16px;
   }
 `;
 
-const Button = styled.button<{ $loading?: boolean }>`
-  padding: 14px;
-  background: ${({ $loading }) => ($loading ? '#93c5fd' : '#3b82f6')};
+const Button = styled.button<{ outlined?: boolean }>`
+  width: 170px;
+  height: 45px;
+  font-size: 15px;
+  border: ${({ outlined }) => (outlined ? "2px solid white" : "none")};
+  border-radius: 5px;
+  cursor: pointer;
+  margin-top: 10px;
+  background-color: ${({ outlined }) => (outlined ? "transparent" : "#b441c5")};
   color: white;
-  border: none;
-  border-radius: 10px;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: ${({ $loading }) => ($loading ? 'not-allowed' : 'pointer')};
-  transition: all 0.2s;
+  transition: all 0.3s ease;
 
-  &:hover:not(:disabled) {
-    background: #2563eb;
+  &:hover {
+    background-color: ${({ outlined }) => (outlined ? "white" : "#a032b0")};
+    color: ${({ outlined }) => (outlined ? "#b441c5" : "white")};
+    box-shadow: 0 0 15px rgba(184, 65, 197, 0.6);
+    transform: scale(1.05);
   }
+`;
+
+const WelcomeContainer = styled.div<{ toggled: boolean }>`
+  position: absolute;
+  width: 50%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  transform: ${({ toggled }) => (toggled ? "translateX(0)" : "translateX(100%)")};
+  background-color: ${({ toggled }) => (toggled ? "#9520a5" : "#ce4de8")};
+  transition: transform 0.5s ease-in-out, border-radius 0.5s ease-in-out;
+  overflow: hidden;
+  border-radius: ${({ toggled }) => (toggled ? "0 50% 50% 0" : "50% 0 0 50%")};
+`;
+
+const WelcomeContent = styled.div<{ show: boolean }>`
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 0 50px;
+  color: white;
+  transition: transform 0.5s ease-in-out;
+  transform: ${({ show }) => (show ? "translateX(0)" : "translateX(100%)")};
+`;
+
+const WelcomeTitle = styled.h3`
+  font-size: 40px;
+`;
+
+const WelcomeText = styled.p`
+  font-size: 20px;
+  text-align: center;
 `;
 
 const ErrorMessage = styled.div`
@@ -91,25 +149,16 @@ const ErrorMessage = styled.div`
   margin-top: 8px;
 `;
 
-const LinkText = styled.p`
-  text-align: center;
-  margin-top: 24px;
-  color: #6b7280;
-
-  a {
-    color: #3b82f6;
-    text-decoration: none;
-    font-weight: 500;
-
-    &:hover {
-      text-decoration: underline;
-    }
-  }
-`;
-
 export default function LoginPage() {
   const router = useRouter();
-  const [formData, setFormData] = useState({ email: '', password: '' });
+  const [isRegister, setIsRegister] = useState(false);
+  const [formData, setFormData] = useState({ 
+    email: '', 
+    password: '', 
+    name: '', 
+    avatarUrl: '', 
+    phone: '' 
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -123,73 +172,155 @@ export default function LoginPage() {
     setError('');
 
     try {
-      const res = await fetch('/api/auth/login', {
+      const endpoint = isRegister ? '/api/auth/register' : '/api/auth/login';
+      const payload = isRegister ? {
+        email: formData.email.trim(),
+        password: formData.password,
+        name: formData.name.trim() || undefined,
+        avatarUrl: formData.avatarUrl.trim() || undefined,
+        phone: formData.phone.trim() || undefined,
+      } : {
+        email: formData.email,
+        password: formData.password,
+      };
+
+      const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
         credentials: 'include',
       });
 
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok || !data.success) {
-        throw new Error(data.message || 'Credenciais inválidas');
+        throw new Error(data.message || (isRegister ? 'Falha ao criar conta' : 'Credenciais inválidas'));
       }
 
       router.push('/painel-agendamento');
       router.refresh();
-    } catch (err: any) {
-      setError(err.message || 'Erro ao tentar fazer login. Tente novamente');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : `Erro ao tentar ${isRegister ? 'criar conta' : 'fazer login'}. Tente novamente`;
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <LoginContainer>
-      <LoginCard>
-        <Title>Bem-vindo de volta</Title>
-        <Subtitle>Faça login para acessar o painel</Subtitle>
+    <AppWrapper>
+      <Container toggled={isRegister}>
+        <FormWrapper>
+          <Form onSubmit={handleSubmit} toggled={isRegister}>
+            <Title>Entrar</Title>
+            <Text>Use seu e-mail e senha</Text>
+            <InputWrapper>
+              <input
+                type="email"
+                name="email"
+                placeholder="E-mail"
+                value={formData.email}
+                onChange={handleChange}
+                required
+              />
+            </InputWrapper>
+            <InputWrapper>
+              <input
+                type="password"
+                name="password"
+                placeholder="Senha"
+                value={formData.password}
+                onChange={handleChange}
+                required
+              />
+            </InputWrapper>
+            <Button type="submit" disabled={loading}>
+              {loading ? 'Entrando...' : 'ENTRAR'}
+            </Button>
+            {error && <ErrorMessage>{error}</ErrorMessage>}
+          </Form>
+        </FormWrapper>
 
-        <Form onSubmit={handleSubmit}>
-          <InputGroup>
-            <Label htmlFor="email">E-mail</Label>
-            <Input
-              type="email"
-              id="email"
-              name="email"
-              placeholder="seu@email.com"
-              value={formData.email}
-              onChange={handleChange}
-              required
-            />
-          </InputGroup>
+        <FormWrapper>
+          <Form onSubmit={handleSubmit} toggled={isRegister} isSignUp>
+            <Title>Registrar</Title>
+            <Text>Use seu e-mail para se registrar</Text>
+            <InputWrapper>
+              <input
+                type="text"
+                name="name"
+                placeholder="Nome"
+                value={formData.name}
+                onChange={handleChange}
+              />
+            </InputWrapper>
+            <InputWrapper>
+              <input
+                type="email"
+                name="email"
+                placeholder="E-mail"
+                value={formData.email}
+                onChange={handleChange}
+                required
+              />
+            </InputWrapper>
+            <InputWrapper>
+              <input
+                type="password"
+                name="password"
+                placeholder="Senha"
+                value={formData.password}
+                onChange={handleChange}
+                required
+                minLength={8}
+              />
+            </InputWrapper>
+            <InputWrapper>
+              <input
+                type="tel"
+                name="phone"
+                placeholder="Telefone (opcional)"
+                value={formData.phone}
+                onChange={handleChange}
+              />
+            </InputWrapper>
+            <InputWrapper>
+              <input
+                type="url"
+                name="avatarUrl"
+                placeholder="Avatar URL (opcional)"
+                value={formData.avatarUrl}
+                onChange={handleChange}
+              />
+            </InputWrapper>
+            <Button type="submit" disabled={loading}>
+              {loading ? 'Registrando...' : 'REGISTRAR'}
+            </Button>
+            {error && <ErrorMessage>{error}</ErrorMessage>}
+          </Form>
+        </FormWrapper>
 
-          <InputGroup>
-            <Label htmlFor="password">Senha</Label>
-            <Input
-              type="password"
-              id="password"
-              name="password"
-              placeholder="••••••••"
-              value={formData.password}
-              onChange={handleChange}
-              required
-            />
-          </InputGroup>
+        <WelcomeContainer toggled={isRegister}>
+          <WelcomeContent show={!isRegister}>
+            <WelcomeTitle>Bem-vindo!</WelcomeTitle>
+            <WelcomeText>Digite seus dados pessoais para usar todas as funções do site</WelcomeText>
+            <Button type="button" outlined onClick={() => setIsRegister(true)}>
+              Registrar
+            </Button>
+          </WelcomeContent>
 
-          <Button type="submit" disabled={loading} $loading={loading}>
-            {loading ? 'Entrando...' : 'Entrar'}
-          </Button>
-
-          {error && <ErrorMessage>{error}</ErrorMessage>}
-        </Form>
-
-        <LinkText>
-          Não tem conta? <Link href="/register">Criar conta</Link>
-        </LinkText>
-      </LoginCard>
-    </LoginContainer>
+          <WelcomeContent show={isRegister}>
+            <WelcomeTitle>Olá!</WelcomeTitle>
+            <WelcomeText>Registre-se com seus dados pessoais para usar todas as funções do site</WelcomeText>
+            <Button type="button" outlined onClick={() => setIsRegister(false)}>
+              Entrar
+            </Button>
+          </WelcomeContent>
+        </WelcomeContainer>
+      </Container>
+    </AppWrapper>
   );
 }
+
+
 

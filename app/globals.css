@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@300..700&display=swap');
+
 /* Global styles — layout also uses styled-components where needed */
 *,
 *::before,
@@ -7,6 +9,7 @@
 
 body {
   margin: 0;
+  font-family: 'Quicksand', sans-serif;
 }
 
 /* Ajuste fino da posição do portal do Next DevTools (preview). */
