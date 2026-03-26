@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import styled, { keyframes } from 'styled-components'
 import { theme } from '@/app/styles/theme'
+import { postLogout } from '@/app/lib/backend'
 
 interface Message {
   text: string
@@ -29,7 +30,31 @@ interface ProactiveRule {
 interface ChatManagerProps {
   apiBaseUrl?: string
   userId?: number
+  /**
+   * Usado para herdar roles/permissions do "usuário principal" que abriu a página do chatbot.
+   * Pode ser usado no cadastro de paciente.
+   */
+  principal?: {
+    role?: string
+    roles?: string[]
+    permissions?: string[]
+  } | null
 }
+
+const DENTISTRY_CONSULTATION_OPTIONS = [
+  'Avaliacao odontologica inicial',
+  'Limpeza e profilaxia',
+  'Clareamento dental',
+  'Ortodontia (aparelho)',
+  'Tratamento de canal (endodontia)',
+  'Extracao dentaria',
+  'Implante dentario',
+  'Protese dentaria',
+  'Periodontia (gengiva)',
+  'Odontopediatria',
+  'Cirurgia bucomaxilofacial',
+  'Dor de dente / urgencia',
+]
 
 const fadeIn = keyframes`
   from { opacity: 0; transform: translateY(6px); }
@@ -195,6 +220,14 @@ const ProactivePanel = styled.div`
   border-top: 1px solid ${theme.colors.border};
   background: ${theme.colors.light};
   max-height: 320px;
+  overflow-y: auto;
+`
+
+const RegistrationPanel = styled.div`
+  padding: 14px;
+  border-top: 1px solid ${theme.colors.border};
+  background: ${theme.colors.light};
+  max-height: 420px;
   overflow-y: auto;
 `
 
@@ -368,7 +401,7 @@ const ActionButton = styled.button<{ $variant: 'primary' | 'secondary' }>`
   }
 `
 
-export default function ChatManager({ apiBaseUrl = '', userId }: ChatManagerProps) {
+export default function ChatManager({ apiBaseUrl = '', userId, principal }: ChatManagerProps) {
   const [chatHistory, setChatHistory] = useState<Message[]>([])
   const [isProcessing, setIsProcessing] = useState(false)
   const [currentTheme, setCurrentTheme] = useState(() => {
@@ -394,6 +427,18 @@ export default function ChatManager({ apiBaseUrl = '', userId }: ChatManagerProp
   const [newRuleMessage, setNewRuleMessage] = useState('')
   const [newRuleCondition, setNewRuleCondition] = useState('')
   const proactiveIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  // ─── Patient Registration (via Chatbot) ────────────────────────
+  const [showPatientRegistration, setShowPatientRegistration] = useState(false)
+  const [patientForm, setPatientForm] = useState({
+    email: '',
+    password: '',
+    name: '',
+    phone: '',
+    consultationType: '',
+  })
+  const [patientLoading, setPatientLoading] = useState(false)
+  const [patientError, setPatientError] = useState<string | null>(null)
 
   /**
    * Este chat foi originalmente feito para um "chatbot backend" externo (ex.: :8080).
@@ -452,7 +497,7 @@ export default function ChatManager({ apiBaseUrl = '', userId }: ChatManagerProp
     const welcomeMessage =
       'Olá! Sou o Gustavinho, a assistente virtual da Edge Machine. Posso ajudar com dúvidas ou agendamentos. Como posso ajudar?'
     addMessage(welcomeMessage, false, {
-      suggestions: ['Agendar serviço', 'Dúvidas sobre serviços', 'Quem Somos'],
+      suggestions: ['Agendar serviço', 'Dúvidas sobre serviços', 'Quem Somos', 'Cadastrar paciente'],
     })
   }
 
@@ -517,6 +562,78 @@ export default function ChatManager({ apiBaseUrl = '', userId }: ChatManagerProp
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       handleSendMessage()
+    }
+  }
+
+  const inheritedRoles =
+    principal?.roles && principal.roles.length > 0
+      ? principal.roles
+      : principal?.role
+        ? [principal.role]
+        : []
+
+  const filteredConsultationOptions = DENTISTRY_CONSULTATION_OPTIONS.filter((option) => {
+    const query = patientForm.consultationType.trim().toLowerCase()
+    if (!query) return true
+    return option.toLowerCase().includes(query)
+  }).slice(0, 6)
+
+  const handleRegisterPatient = async () => {
+    if (patientLoading) return
+    setPatientError(null)
+
+    const email = patientForm.email.trim()
+    const password = patientForm.password
+
+    if (!email || !password) {
+      setPatientError('E-mail e senha são obrigatórios.')
+      return
+    }
+
+    setPatientLoading(true)
+    try {
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          email,
+          password,
+          name: patientForm.name.trim() || undefined,
+          phone: patientForm.phone.trim() || undefined,
+          consultationType: patientForm.consultationType.trim() || undefined,
+          consultationCategory: 'odontologia',
+          role: 'paciente',
+          roles: inheritedRoles.length > 0 ? inheritedRoles : undefined,
+          permissions: principal?.permissions?.length ? principal.permissions : undefined,
+        }),
+      })
+
+      const data = (await res.json().catch(() => ({}))) as {
+        success?: boolean
+        message?: string
+      }
+
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || 'Falha ao cadastrar paciente.')
+      }
+
+      addMessage(
+        'Paciente cadastrado com sucesso. O administrador poderá acessar com as mesmas roles/permissões do usuário principal.',
+        false,
+      )
+
+      setShowPatientRegistration(false)
+      setPatientForm({ email: '', password: '', name: '', phone: '', consultationType: '' })
+
+      // Garantir que ninguém fique logado após o cadastro.
+      await postLogout().catch(() => {})
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Falha ao cadastrar paciente.'
+      setPatientError(msg)
+      addMessage(msg, false)
+    } finally {
+      setPatientLoading(false)
     }
   }
 
@@ -715,7 +832,15 @@ export default function ChatManager({ apiBaseUrl = '', userId }: ChatManagerProp
               <SuggestionButton
                 key={index}
                 type="button"
-                onClick={() => handleSendMessage(suggestion, true)}
+                onClick={() => {
+                  if (suggestion === 'Cadastrar paciente') {
+                    setShowPatientRegistration(true)
+                    setPatientError(null)
+                    setPatientForm({ email: '', password: '', name: '', phone: '', consultationType: '' })
+                    return
+                  }
+                  handleSendMessage(suggestion, true)
+                }}
               >
                 {suggestion}
               </SuggestionButton>
@@ -805,6 +930,93 @@ export default function ChatManager({ apiBaseUrl = '', userId }: ChatManagerProp
             </ActionButton>
           )}
         </ProactivePanel>
+      )}
+
+      {showPatientRegistration && (
+        <RegistrationPanel>
+          <PanelTitle>Cadastro de Paciente</PanelTitle>
+
+          {patientError && (
+            <p style={{ fontSize: '12px', color: '#ef4444', margin: '0 0 10px' }}>
+              {patientError}
+            </p>
+          )}
+
+          <AddRuleForm style={{ border: 'none', padding: 0, background: 'transparent', marginTop: 0 }}>
+            <FormRow>
+              <SmallInput
+                placeholder="E-mail do paciente"
+                value={patientForm.email}
+                onChange={(e) => setPatientForm((p) => ({ ...p, email: e.target.value }))}
+                type="email"
+                autoComplete="email"
+              />
+              <SmallInput
+                placeholder="Senha"
+                value={patientForm.password}
+                onChange={(e) => setPatientForm((p) => ({ ...p, password: e.target.value }))}
+                type="password"
+                autoComplete="new-password"
+              />
+            </FormRow>
+
+            <FormRow>
+              <SmallInput
+                placeholder="Nome (opcional)"
+                value={patientForm.name}
+                onChange={(e) => setPatientForm((p) => ({ ...p, name: e.target.value }))}
+                type="text"
+              />
+              <SmallInput
+                placeholder="Telefone (opcional)"
+                value={patientForm.phone}
+                onChange={(e) => setPatientForm((p) => ({ ...p, phone: e.target.value }))}
+                type="tel"
+              />
+            </FormRow>
+
+            <SmallInput
+              placeholder="Consulta odontologica (ex.: limpeza, canal, implante)"
+              value={patientForm.consultationType}
+              onChange={(e) => setPatientForm((p) => ({ ...p, consultationType: e.target.value }))}
+              type="text"
+            />
+            <Suggestions aria-label="Sugestoes de consulta odontologica">
+              {filteredConsultationOptions.map((option) => (
+                <SuggestionButton
+                  key={option}
+                  type="button"
+                  onClick={() => setPatientForm((p) => ({ ...p, consultationType: option }))}
+                >
+                  {option}
+                </SuggestionButton>
+              ))}
+            </Suggestions>
+
+            <FormRow>
+              <ActionButton
+                type="button"
+                $variant="primary"
+                onClick={handleRegisterPatient}
+                disabled={
+                  patientLoading || !patientForm.email.trim() || patientForm.password.length < 1
+                }
+                style={{ fontSize: '12px', padding: '6px 10px', marginTop: 6 }}
+              >
+                {patientLoading ? 'Cadastrando...' : 'Cadastrar'}
+              </ActionButton>
+              <ActionButton
+                type="button"
+                $variant="secondary"
+                onClick={() => setShowPatientRegistration(false)}
+                disabled={patientLoading}
+                style={{ fontSize: '12px', padding: '6px 10px', marginTop: 6 }}
+              >
+                Cancelar
+              </ActionButton>
+            </FormRow>
+          </AddRuleForm>
+        </RegistrationPanel>
       )}
 
       <InputBar>

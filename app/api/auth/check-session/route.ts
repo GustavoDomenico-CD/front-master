@@ -26,6 +26,9 @@ export async function GET(request: Request) {
       id?: number
       email?: string
       name?: string | null
+      role?: string
+      roles?: string[]
+      permissions?: string[]
     }
 
     if (!res.ok || data.id == null) {
@@ -38,7 +41,9 @@ export async function GET(request: Request) {
         id: data.id,
         username: data.name?.trim() || data.email || '',
         email: data.email ?? '',
-        role: 'user',
+        role: (data.role ?? 'user').toString(),
+        roles: Array.isArray(data.roles) ? data.roles : undefined,
+        permissions: Array.isArray(data.permissions) ? data.permissions : undefined,
       },
     })
   } catch {

@@ -18,7 +18,6 @@ import { usePagination } from '@/app/hooks/usePagination';
 import GraficosDashboard from '@/app/shared/GraphsDashboard';
 import EditarAgendamentoModal from '@/app/shared/AppoimentsEditModal';
 import { deleteAppointment, postLogout } from '@/app/lib/backend';
-import ChatManager from '@/app/shared/Chatbot';
 
 export default function AppoimentsPanel() {
   const router = useRouter();
@@ -85,6 +84,9 @@ export default function AppoimentsPanel() {
     <div className="painel-container">
       <header>
         <h1>Olá, {user?.username}</h1>
+        <button type="button" onClick={() => router.push('/chatbot')}>
+          Chatbot
+        </button>
         <button onClick={handleLogout}>Sair</button>
       </header>
 
@@ -122,8 +124,6 @@ export default function AppoimentsPanel() {
       </section>
 
       <GraficosDashboard chartsData={chartsData} />
-
-      <ChatManager />
 
       {modalOpen && agendamentoEdit && (
         <EditarAgendamentoModal

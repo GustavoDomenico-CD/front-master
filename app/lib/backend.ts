@@ -22,6 +22,12 @@ export interface UserSession {
   username: string
   email: string
   role: string
+  /**
+   * Alguns backends retornam também roles/permissions.
+   * Esses campos são opcionais para manter compatibilidade.
+   */
+  roles?: string[]
+  permissions?: string[]
 }
 
 export interface CheckSessionSuccess {

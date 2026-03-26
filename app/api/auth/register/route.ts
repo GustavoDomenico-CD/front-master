@@ -11,6 +11,11 @@ export async function POST(request: Request) {
       name?: string
       avatarUrl?: string
       phone?: string
+      consultationType?: string
+      consultationCategory?: string
+      role?: string
+      roles?: string[]
+      permissions?: string[]
     }
 
     if (!body.email?.trim() || !body.password) {
@@ -28,6 +33,12 @@ export async function POST(request: Request) {
         name: body.name?.trim() || undefined,
         avatarUrl: body.avatarUrl?.trim() || undefined,
         phone: body.phone?.trim() || undefined,
+        consultationType: body.consultationType?.trim() || undefined,
+        consultationCategory: body.consultationCategory?.trim() || undefined,
+        role: body.role?.trim() || undefined,
+        roles: Array.isArray(body.roles) && body.roles.length > 0 ? body.roles : undefined,
+        permissions:
+          Array.isArray(body.permissions) && body.permissions.length > 0 ? body.permissions : undefined,
       }),
     })
 
