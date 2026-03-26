@@ -8,14 +8,27 @@ interface Message {
   isUser: boolean
   timestamp: Date
   options?: Options
+  isProactive?: boolean
 }
 
 interface Options {
   suggestions?: string[]
 }
 
+interface ProactiveRule {
+  id: number
+  userId: number
+  trigger: 'interval' | 'event' | 'schedule'
+  condition: Record<string, unknown>
+  message: string
+  isActive: boolean
+  lastFiredAt: string | null
+  createdAt: string
+}
+
 interface ChatManagerProps {
   apiBaseUrl?: string
+  userId?: number
 }
 
 const fadeIn = keyframes`
@@ -164,6 +177,150 @@ const SuggestionButton = styled.button`
   }
 `
 
+const ProactiveBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  color: ${theme.colors.primary};
+  background: rgba(59, 130, 246, 0.08);
+  padding: 2px 8px;
+  border-radius: 999px;
+  margin-bottom: 4px;
+`
+
+const ProactivePanel = styled.div`
+  padding: 14px;
+  border-top: 1px solid ${theme.colors.border};
+  background: ${theme.colors.light};
+  max-height: 320px;
+  overflow-y: auto;
+`
+
+const PanelTitle = styled.h4`
+  margin: 0 0 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: ${theme.colors.dark};
+`
+
+const RuleCard = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  background: white;
+  border: 1px solid ${theme.colors.border};
+  border-radius: ${theme.radius.md};
+  margin-bottom: 6px;
+  font-size: 12px;
+`
+
+const RuleInfo = styled.div`
+  flex: 1;
+  min-width: 0;
+`
+
+const RuleTrigger = styled.span`
+  font-size: 10px;
+  font-weight: 600;
+  color: ${theme.colors.gray};
+  text-transform: uppercase;
+`
+
+const RuleMessage = styled.p`
+  margin: 2px 0 0;
+  color: ${theme.colors.dark};
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`
+
+const ToggleButton = styled.button<{ $active: boolean }>`
+  width: 36px;
+  height: 20px;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  position: relative;
+  background: ${(p) => (p.$active ? theme.colors.primary : theme.colors.border)};
+  transition: background 0.2s;
+  flex-shrink: 0;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: ${(p) => (p.$active ? '18px' : '2px')};
+    width: 16px;
+    height: 16px;
+    border-radius: 999px;
+    background: white;
+    transition: left 0.2s;
+  }
+`
+
+const SmallButton = styled.button`
+  border: none;
+  background: none;
+  color: ${theme.colors.gray};
+  cursor: pointer;
+  font-size: 14px;
+  padding: 2px;
+  flex-shrink: 0;
+
+  &:hover {
+    color: ${theme.colors.primary};
+  }
+`
+
+const AddRuleForm = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 10px;
+  background: white;
+  border: 1px solid ${theme.colors.border};
+  border-radius: ${theme.radius.md};
+`
+
+const FormRow = styled.div`
+  display: flex;
+  gap: 8px;
+  align-items: center;
+`
+
+const SmallInput = styled.input`
+  flex: 1;
+  border: 1px solid ${theme.colors.border};
+  border-radius: ${theme.radius.sm};
+  padding: 6px 8px;
+  font-size: 12px;
+  color: ${theme.colors.dark};
+
+  &:focus {
+    outline: none;
+    border-color: ${theme.colors.primary};
+  }
+`
+
+const SmallSelect = styled.select`
+  border: 1px solid ${theme.colors.border};
+  border-radius: ${theme.radius.sm};
+  padding: 6px 8px;
+  font-size: 12px;
+  color: ${theme.colors.dark};
+  background: white;
+
+  &:focus {
+    outline: none;
+    border-color: ${theme.colors.primary};
+  }
+`
+
 const InputBar = styled.div`
   display: flex;
   gap: 10px;
@@ -211,7 +368,7 @@ const ActionButton = styled.button<{ $variant: 'primary' | 'secondary' }>`
   }
 `
 
-export default function ChatManager({ apiBaseUrl = '' }: ChatManagerProps) {
+export default function ChatManager({ apiBaseUrl = '', userId }: ChatManagerProps) {
   const [chatHistory, setChatHistory] = useState<Message[]>([])
   const [isProcessing, setIsProcessing] = useState(false)
   const [currentTheme, setCurrentTheme] = useState(() => {
@@ -229,6 +386,15 @@ export default function ChatManager({ apiBaseUrl = '' }: ChatManagerProps) {
   const chatContainerRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
+  // ─── Proactive Agent State ────────────────────────────────
+  const [showProactivePanel, setShowProactivePanel] = useState(false)
+  const [proactiveRules, setProactiveRules] = useState<ProactiveRule[]>([])
+  const [showAddRule, setShowAddRule] = useState(false)
+  const [newRuleTrigger, setNewRuleTrigger] = useState<'interval' | 'event' | 'schedule'>('interval')
+  const [newRuleMessage, setNewRuleMessage] = useState('')
+  const [newRuleCondition, setNewRuleCondition] = useState('')
+  const proactiveIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
   /**
    * Este chat foi originalmente feito para um "chatbot backend" externo (ex.: :8080).
    * No nosso app, esse serviço pode não estar rodando — então só chamamos API se
@@ -241,6 +407,24 @@ export default function ChatManager({ apiBaseUrl = '' }: ChatManagerProps) {
     if (apiUrl) initBackend()
     showWelcomeMessage()
   }, [])
+
+  // Polling para mensagens proativas
+  useEffect(() => {
+    if (!userId) return
+
+    fetchProactiveRules()
+
+    // Poll a cada 60 segundos para mensagens proativas
+    proactiveIntervalRef.current = setInterval(() => {
+      checkProactiveMessages()
+    }, 60_000)
+
+    return () => {
+      if (proactiveIntervalRef.current) {
+        clearInterval(proactiveIntervalRef.current)
+      }
+    }
+  }, [userId])
 
   const initBackend = async () => {
     if (!apiUrl) return
@@ -272,11 +456,11 @@ export default function ChatManager({ apiBaseUrl = '' }: ChatManagerProps) {
     })
   }
 
-  const addMessage = (text: string, isUser: boolean, options: Options = {}) => {
+  const addMessage = (text: string, isUser: boolean, options: Options = {}, isProactive: boolean = false) => {
     if (!text) {
       text = 'Mensagem vazia ou erro desconhecido.'
     }
-    const newMessage: Message = { text, isUser, timestamp: new Date(), options }
+    const newMessage: Message = { text, isUser, timestamp: new Date(), options, isProactive }
     setChatHistory((prev) => [...prev, newMessage])
     if (options.suggestions && options.suggestions.length > 0) {
       setSuggestions(options.suggestions)
@@ -336,6 +520,117 @@ export default function ChatManager({ apiBaseUrl = '' }: ChatManagerProps) {
     }
   }
 
+  // ─── Proactive Agent Functions ──────────────────────────────
+
+  const fetchProactiveRules = async () => {
+    if (!userId) return
+    try {
+      const res = await fetch(`/api/admin/proactive/rules?userId=${userId}`, {
+        credentials: 'include',
+      })
+      const data = await res.json()
+      if (data.status === 'sucesso' && Array.isArray(data.data)) {
+        setProactiveRules(data.data)
+      }
+    } catch (err) {
+      console.error('Erro ao buscar regras proativas:', err)
+    }
+  }
+
+  const checkProactiveMessages = async () => {
+    if (!userId) return
+    try {
+      const res = await fetch(`/api/admin/proactive/check?userId=${userId}`, {
+        credentials: 'include',
+      })
+      const data = await res.json()
+      if (data.status === 'sucesso' && Array.isArray(data.data)) {
+        for (const msg of data.data) {
+          addMessage(msg.message, false, {}, true)
+        }
+      }
+    } catch (err) {
+      console.error('Erro ao verificar mensagens proativas:', err)
+    }
+  }
+
+  const addProactiveRule = async () => {
+    if (!userId || !newRuleMessage.trim()) return
+    let condition: Record<string, unknown> = {}
+    try {
+      condition = newRuleCondition.trim() ? JSON.parse(newRuleCondition) : {}
+    } catch {
+      if (newRuleTrigger === 'interval') {
+        condition = { intervalMinutes: parseInt(newRuleCondition) || 30 }
+      } else if (newRuleTrigger === 'event') {
+        condition = { event: newRuleCondition.trim() }
+      } else if (newRuleTrigger === 'schedule') {
+        const parts = newRuleCondition.split(':')
+        condition = { hour: parseInt(parts[0]) || 0, minute: parseInt(parts[1]) || 0 }
+      }
+    }
+    try {
+      const res = await fetch('/api/admin/proactive/rules', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId,
+          trigger: newRuleTrigger,
+          condition,
+          message: newRuleMessage.trim(),
+        }),
+      })
+      const data = await res.json()
+      if (data.status === 'sucesso') {
+        setNewRuleMessage('')
+        setNewRuleCondition('')
+        setShowAddRule(false)
+        fetchProactiveRules()
+      }
+    } catch (err) {
+      console.error('Erro ao criar regra proativa:', err)
+    }
+  }
+
+  const toggleProactiveRule = async (ruleId: number) => {
+    try {
+      await fetch(`/api/admin/proactive/rules`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ _action: 'toggle', ruleId }),
+      })
+      setProactiveRules((prev) =>
+        prev.map((r) => (r.id === ruleId ? { ...r, isActive: !r.isActive } : r)),
+      )
+    } catch (err) {
+      console.error('Erro ao alternar regra proativa:', err)
+    }
+  }
+
+  const deleteProactiveRule = async (ruleId: number) => {
+    try {
+      await fetch(`/api/admin/proactive/rules`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ _action: 'delete', ruleId }),
+      })
+      setProactiveRules((prev) => prev.filter((r) => r.id !== ruleId))
+    } catch (err) {
+      console.error('Erro ao remover regra proativa:', err)
+    }
+  }
+
+  const triggerConditionPlaceholder = () => {
+    switch (newRuleTrigger) {
+      case 'interval': return 'Minutos (ex.: 30)'
+      case 'event': return 'Nome do evento (ex.: new_appointment)'
+      case 'schedule': return 'Horário HH:MM (ex.: 09:00)'
+    }
+  }
+
   const resetChat = async () => {
     if (
       !window.confirm(
@@ -377,12 +672,24 @@ export default function ChatManager({ apiBaseUrl = '' }: ChatManagerProps) {
           <Title>Gustavinho</Title>
           <Subtitle>Seu Agente Virtual da Edge Machine</Subtitle>
         </HeaderText>
+        {userId && (
+          <SmallButton
+            onClick={() => setShowProactivePanel((v) => !v)}
+            title="Configurar comportamento proativo"
+            style={{ color: 'white', fontSize: '18px', marginLeft: 'auto' }}
+          >
+            {showProactivePanel ? '\u2715' : '\u2699'}
+          </SmallButton>
+        )}
       </Header>
 
       <Messages ref={chatContainerRef} aria-label="Mensagens do chat">
         {chatHistory.map((msg, index) => (
           <BubbleRow key={index} $isUser={msg.isUser}>
             <Bubble $isUser={msg.isUser}>
+              {msg.isProactive && (
+                <ProactiveBadge>&#9889; Proativo</ProactiveBadge>
+              )}
               <div dangerouslySetInnerHTML={{ __html: formatMessageText(msg.text) }} />
               <BubbleTime>{formatTime(msg.timestamp)}</BubbleTime>
             </Bubble>
@@ -416,6 +723,89 @@ export default function ChatManager({ apiBaseUrl = '' }: ChatManagerProps) {
           </Suggestions>
         )}
       </Messages>
+
+      {showProactivePanel && userId && (
+        <ProactivePanel>
+          <PanelTitle>Comportamento Proativo do Agente</PanelTitle>
+
+          {proactiveRules.length === 0 && !showAddRule && (
+            <p style={{ fontSize: '12px', color: theme.colors.gray, margin: '0 0 8px' }}>
+              Nenhuma regra configurada. O agente pode enviar mensagens automaticamente
+              com base em intervalos, horários ou eventos.
+            </p>
+          )}
+
+          {proactiveRules.map((rule) => (
+            <RuleCard key={rule.id}>
+              <RuleInfo>
+                <RuleTrigger>{rule.trigger}</RuleTrigger>
+                <RuleMessage title={rule.message}>{rule.message}</RuleMessage>
+              </RuleInfo>
+              <ToggleButton
+                $active={rule.isActive}
+                onClick={() => toggleProactiveRule(rule.id)}
+                title={rule.isActive ? 'Desativar' : 'Ativar'}
+              />
+              <SmallButton onClick={() => deleteProactiveRule(rule.id)} title="Remover">
+                &#128465;
+              </SmallButton>
+            </RuleCard>
+          ))}
+
+          {showAddRule ? (
+            <AddRuleForm>
+              <FormRow>
+                <SmallSelect
+                  value={newRuleTrigger}
+                  onChange={(e) => setNewRuleTrigger(e.target.value as 'interval' | 'event' | 'schedule')}
+                >
+                  <option value="interval">Intervalo</option>
+                  <option value="schedule">Horário</option>
+                  <option value="event">Evento</option>
+                </SmallSelect>
+                <SmallInput
+                  placeholder={triggerConditionPlaceholder()}
+                  value={newRuleCondition}
+                  onChange={(e) => setNewRuleCondition(e.target.value)}
+                />
+              </FormRow>
+              <SmallInput
+                placeholder="Mensagem que o agente enviará..."
+                value={newRuleMessage}
+                onChange={(e) => setNewRuleMessage(e.target.value)}
+              />
+              <FormRow>
+                <ActionButton
+                  type="button"
+                  $variant="primary"
+                  onClick={addProactiveRule}
+                  disabled={!newRuleMessage.trim()}
+                  style={{ fontSize: '12px', padding: '6px 10px' }}
+                >
+                  Salvar
+                </ActionButton>
+                <ActionButton
+                  type="button"
+                  $variant="secondary"
+                  onClick={() => setShowAddRule(false)}
+                  style={{ fontSize: '12px', padding: '6px 10px' }}
+                >
+                  Cancelar
+                </ActionButton>
+              </FormRow>
+            </AddRuleForm>
+          ) : (
+            <ActionButton
+              type="button"
+              $variant="primary"
+              onClick={() => setShowAddRule(true)}
+              style={{ fontSize: '12px', padding: '6px 10px', marginTop: '4px' }}
+            >
+              + Nova regra
+            </ActionButton>
+          )}
+        </ProactivePanel>
+      )}
 
       <InputBar>
         <TextInput
