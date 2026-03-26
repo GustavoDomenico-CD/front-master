@@ -11,8 +11,14 @@ interface Message {
   isProactive?: boolean
 }
 
+interface ProactiveButton {
+  label: string
+  value: string
+}
+
 interface Options {
   suggestions?: string[]
+  buttons?: ProactiveButton[]
 }
 
 interface ProactiveRule {
@@ -21,6 +27,7 @@ interface ProactiveRule {
   trigger: 'interval' | 'event' | 'schedule'
   condition: Record<string, unknown>
   message: string
+  buttons: ProactiveButton[]
   isActive: boolean
   lastFiredAt: string | null
   createdAt: string
@@ -188,6 +195,50 @@ const ProactiveBadge = styled.span`
   padding: 2px 8px;
   border-radius: 999px;
   margin-bottom: 4px;
+`
+
+const ProactiveButtonGroup = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+`
+
+const ProactiveOptionButton = styled.button<{ $disabled?: boolean }>`
+  border: 1.5px solid ${theme.colors.primary};
+  background: white;
+  color: ${theme.colors.primary};
+  padding: 7px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 999px;
+  cursor: ${(p) => (p.$disabled ? 'default' : 'pointer')};
+  transition: all 0.18s ease;
+  opacity: ${(p) => (p.$disabled ? 0.55 : 1)};
+
+  &:hover:not(:disabled) {
+    background: ${theme.colors.primary};
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.25);
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0);
+  }
+`
+
+const SelectedBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  color: white;
+  background: ${theme.colors.primary};
+  padding: 2px 8px;
+  border-radius: 999px;
+  margin-top: 4px;
 `
 
 const ProactivePanel = styled.div`
@@ -393,6 +444,9 @@ export default function ChatManager({ apiBaseUrl = '', userId }: ChatManagerProp
   const [newRuleTrigger, setNewRuleTrigger] = useState<'interval' | 'event' | 'schedule'>('interval')
   const [newRuleMessage, setNewRuleMessage] = useState('')
   const [newRuleCondition, setNewRuleCondition] = useState('')
+  const [newRuleButtons, setNewRuleButtons] = useState<ProactiveButton[]>([])
+  const [newButtonLabel, setNewButtonLabel] = useState('')
+  const [newButtonValue, setNewButtonValue] = useState('')
   const proactiveIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   /**
@@ -546,7 +600,10 @@ export default function ChatManager({ apiBaseUrl = '', userId }: ChatManagerProp
       const data = await res.json()
       if (data.status === 'sucesso' && Array.isArray(data.data)) {
         for (const msg of data.data) {
-          addMessage(msg.message, false, {}, true)
+          const buttons = Array.isArray(msg.buttons) && msg.buttons.length > 0
+            ? msg.buttons
+            : undefined
+          addMessage(msg.message, false, { buttons }, true)
         }
       }
     } catch (err) {
@@ -579,12 +636,16 @@ export default function ChatManager({ apiBaseUrl = '', userId }: ChatManagerProp
           trigger: newRuleTrigger,
           condition,
           message: newRuleMessage.trim(),
+          buttons: newRuleButtons.length > 0 ? newRuleButtons : undefined,
         }),
       })
       const data = await res.json()
       if (data.status === 'sucesso') {
         setNewRuleMessage('')
         setNewRuleCondition('')
+        setNewRuleButtons([])
+        setNewButtonLabel('')
+        setNewButtonValue('')
         setShowAddRule(false)
         fetchProactiveRules()
       }
@@ -621,6 +682,32 @@ export default function ChatManager({ apiBaseUrl = '', userId }: ChatManagerProp
     } catch (err) {
       console.error('Erro ao remover regra proativa:', err)
     }
+  }
+
+  const handleProactiveButtonClick = (button: ProactiveButton, messageIndex: number) => {
+    // Desabilita os botões dessa mensagem marcando-a como "respondida"
+    setChatHistory((prev) =>
+      prev.map((msg, i) =>
+        i === messageIndex
+          ? { ...msg, options: { ...msg.options, buttons: msg.options?.buttons?.map((b) => ({ ...b })) }, isProactive: false }
+          : msg,
+      ),
+    )
+    // Envia a resposta selecionada como mensagem do usuário
+    addMessage(button.label, true)
+    // Processa a resposta como se fosse uma mensagem normal
+    handleSendMessage(button.value, true)
+  }
+
+  const addButtonToNewRule = () => {
+    if (!newButtonLabel.trim() || !newButtonValue.trim()) return
+    setNewRuleButtons((prev) => [...prev, { label: newButtonLabel.trim(), value: newButtonValue.trim() }])
+    setNewButtonLabel('')
+    setNewButtonValue('')
+  }
+
+  const removeButtonFromNewRule = (index: number) => {
+    setNewRuleButtons((prev) => prev.filter((_, i) => i !== index))
   }
 
   const triggerConditionPlaceholder = () => {
@@ -691,6 +778,22 @@ export default function ChatManager({ apiBaseUrl = '', userId }: ChatManagerProp
                 <ProactiveBadge>&#9889; Proativo</ProactiveBadge>
               )}
               <div dangerouslySetInnerHTML={{ __html: formatMessageText(msg.text) }} />
+              {msg.isProactive && msg.options?.buttons && msg.options.buttons.length > 0 && (
+                <ProactiveButtonGroup>
+                  {msg.options.buttons.map((btn, btnIdx) => (
+                    <ProactiveOptionButton
+                      key={btnIdx}
+                      type="button"
+                      onClick={() => handleProactiveButtonClick(btn, index)}
+                    >
+                      {btn.label}
+                    </ProactiveOptionButton>
+                  ))}
+                </ProactiveButtonGroup>
+              )}
+              {!msg.isProactive && !msg.isUser && msg.options?.buttons && msg.options.buttons.length > 0 && (
+                <SelectedBadge>&#10003; Respondido</SelectedBadge>
+              )}
               <BubbleTime>{formatTime(msg.timestamp)}</BubbleTime>
             </Bubble>
           </BubbleRow>
@@ -738,7 +841,14 @@ export default function ChatManager({ apiBaseUrl = '', userId }: ChatManagerProp
           {proactiveRules.map((rule) => (
             <RuleCard key={rule.id}>
               <RuleInfo>
-                <RuleTrigger>{rule.trigger}</RuleTrigger>
+                <RuleTrigger>
+                  {rule.trigger}
+                  {Array.isArray(rule.buttons) && rule.buttons.length > 0 && (
+                    <span style={{ marginLeft: '6px', color: theme.colors.primary }}>
+                      {rule.buttons.length} {rule.buttons.length === 1 ? 'botão' : 'botões'}
+                    </span>
+                  )}
+                </RuleTrigger>
                 <RuleMessage title={rule.message}>{rule.message}</RuleMessage>
               </RuleInfo>
               <ToggleButton
@@ -774,6 +884,65 @@ export default function ChatManager({ apiBaseUrl = '', userId }: ChatManagerProp
                 value={newRuleMessage}
                 onChange={(e) => setNewRuleMessage(e.target.value)}
               />
+
+              {/* Editor de botões de resposta */}
+              <div style={{ borderTop: `1px solid ${theme.colors.border}`, paddingTop: '8px', marginTop: '4px' }}>
+                <span style={{ fontSize: '11px', fontWeight: 600, color: theme.colors.gray }}>
+                  Botões de resposta (opcional)
+                </span>
+                {newRuleButtons.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '6px' }}>
+                    {newRuleButtons.map((btn, i) => (
+                      <span
+                        key={i}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          fontSize: '11px',
+                          padding: '3px 8px',
+                          borderRadius: '999px',
+                          border: `1px solid ${theme.colors.primary}`,
+                          color: theme.colors.primary,
+                          background: 'rgba(59,130,246,0.06)',
+                        }}
+                      >
+                        {btn.label}
+                        <span
+                          onClick={() => removeButtonFromNewRule(i)}
+                          style={{ cursor: 'pointer', fontWeight: 700, marginLeft: '2px' }}
+                        >
+                          &times;
+                        </span>
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <FormRow style={{ marginTop: '6px' }}>
+                  <SmallInput
+                    placeholder="Texto do botão"
+                    value={newButtonLabel}
+                    onChange={(e) => setNewButtonLabel(e.target.value)}
+                    style={{ flex: 1 }}
+                  />
+                  <SmallInput
+                    placeholder="Valor enviado"
+                    value={newButtonValue}
+                    onChange={(e) => setNewButtonValue(e.target.value)}
+                    style={{ flex: 1 }}
+                  />
+                  <ActionButton
+                    type="button"
+                    $variant="secondary"
+                    onClick={addButtonToNewRule}
+                    disabled={!newButtonLabel.trim() || !newButtonValue.trim()}
+                    style={{ fontSize: '11px', padding: '5px 8px' }}
+                  >
+                    +
+                  </ActionButton>
+                </FormRow>
+              </div>
+
               <FormRow>
                 <ActionButton
                   type="button"
