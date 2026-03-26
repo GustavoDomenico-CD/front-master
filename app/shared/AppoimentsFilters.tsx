@@ -103,14 +103,40 @@ interface FiltersAppoimentsProps {
     services?: { id: number; name: string }[];
 }
 
+const MOCK_PROFESSIONALS = [
+  { id: 1, name: "Dra. Ana Souza" },
+  { id: 2, name: "Dr. Bruno Lima" },
+  { id: 3, name: "Dra. Camila Prado" },
+  { id: 4, name: "Dr. Daniel Costa" },
+];
+
+const MOCK_LOCALS = [
+  { id: 1, name: "Clinica Centro" },
+  { id: 2, name: "Clinica Zona Sul" },
+  { id: 3, name: "Clinica Zona Norte" },
+];
+
+const MOCK_SERVICE_TYPES_BY_PROFESSIONAL: Record<string, string[]> = {
+  "Dra. Ana Souza": ["Limpeza", "Clareamento", "Avaliacao"],
+  "Dr. Bruno Lima": ["Canal", "Extracao", "Urgencia"],
+  "Dra. Camila Prado": ["Ortodontia", "Manutencao de aparelho", "Avaliacao"],
+  "Dr. Daniel Costa": ["Implante", "Protese", "Cirurgia oral"],
+};
+
+const STATUS_OPTIONS = ["Pendente", "Confirmado", "Concluido", "Cancelado"];
+const APPOINTMENT_TYPES = ["Consulta", "Retorno", "Urgencia"];
+
 const AppointmentsFilters: React.FC<FiltersAppoimentsProps> = ({
   onApply,
   professionals = [],
   local = [],
   services = [],
 }) => {
+  const professionalOptions = professionals.length > 0 ? professionals : MOCK_PROFESSIONALS;
+  const localOptions = local.length > 0 ? local : MOCK_LOCALS;
+
   const [filtros, setFiltros] = useState<Filters>({
-   startDate: '',
+    startDate: '',
     endDate: '',
     service: '',
     professional: '',
@@ -134,13 +160,21 @@ const AppointmentsFilters: React.FC<FiltersAppoimentsProps> = ({
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFiltros((prev) => ({ ...prev, [name]: value }));
+    setFiltros((prev) => {
+      // Quando troca profissional, limpamos o tipo de serviço para evitar combinação inválida.
+      if (name === "professional") {
+        return { ...prev, professional: value, typeOfService: "" };
+      }
+      return { ...prev, [name]: value };
+    });
   };
 
-  const handleApply = () => {
-    onApply(filtros);
-  };
-  
+  const selectedProfessional = filtros.professional;
+  const serviceTypeOptions = selectedProfessional
+    ? (MOCK_SERVICE_TYPES_BY_PROFESSIONAL[selectedProfessional] ?? [])
+    : Array.from(new Set(Object.values(MOCK_SERVICE_TYPES_BY_PROFESSIONAL).flat()));
+  const serviceOptions = services.length > 0 ? services : serviceTypeOptions.map((name, i) => ({ id: i + 1, name }));
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onApply(filtros);
@@ -182,7 +216,7 @@ const AppointmentsFilters: React.FC<FiltersAppoimentsProps> = ({
                 <Label htmlFor="service">Serviço</Label>
                 <Select id="service" name="service" value={filtros.service} onChange={handleChange}>
                     <option value="">Todos</option>
-                    {services.map((s) => (
+                    {serviceOptions.map((s) => (
                         <option key={s.id} value={s.name}>{s.name}</option>
                     ))}
                 </Select>
@@ -191,17 +225,26 @@ const AppointmentsFilters: React.FC<FiltersAppoimentsProps> = ({
                 <Label htmlFor="professional">Profissional</Label>
                 <Select id="professional" name="professional" value={filtros.professional} onChange={handleChange}>
                     <option value="">Todos</option>
-                    {professionals.map((p) => (
+                    {professionalOptions.map((p) => (
                         <option key={p.id} value={p.name}>{p.name}</option>
                     ))}
                 </Select>
             </FormGroup>
             <FormGroup>
-                <Label htmlFor="typeOfService">Tipo de Serviço</Label>
+                <Label htmlFor="typeOfService">Tipo de Serviço (por profissional)</Label>
                 <Select id="typeOfService" name="typeOfService" value={filtros.typeOfService } onChange={handleChange}>
                     <option value="">Todos</option>
-                    {services.map((s) => (
-                        <option key={s.id} value={s.name}>{s.name}</option>
+                    {serviceTypeOptions.map((serviceType) => (
+                        <option key={serviceType} value={serviceType}>{serviceType}</option>
+                    ))}
+                </Select>
+            </FormGroup>
+            <FormGroup>
+                <Label htmlFor="type_appointment">Tipo de Agendamento</Label>
+                <Select id="type_appointment" name="type_appointment" value={filtros.type_appointment} onChange={handleChange}>
+                    <option value="">Todos</option>
+                    {APPOINTMENT_TYPES.map((type) => (
+                        <option key={type} value={type}>{type}</option>
                     ))}
                 </Select>
             </FormGroup>
@@ -209,8 +252,17 @@ const AppointmentsFilters: React.FC<FiltersAppoimentsProps> = ({
                 <Label htmlFor="status">Status</Label>
                 <Select id="status" name="status" value={filtros.status} onChange={handleChange}>
                     <option value="">Todos</option>
-                    {services.map((s) => (
-                        <option key={s.id} value={s.name}>{s.name}</option>
+                    {STATUS_OPTIONS.map((status) => (
+                        <option key={status} value={status}>{status}</option>
+                    ))}
+                </Select>
+            </FormGroup>
+            <FormGroup>
+                <Label htmlFor="local">Unidade</Label>
+                <Select id="local" name="local" value={filtros.local} onChange={handleChange}>
+                    <option value="">Todos</option>
+                    {localOptions.map((u) => (
+                        <option key={u.id} value={u.name}>{u.name}</option>
                     ))}
                 </Select>
             </FormGroup>

@@ -8,3 +8,9 @@
 body {
   margin: 0;
 }
+
+/* Ajuste fino da posição do portal do Next DevTools (preview). */
+nextjs-portal[style*='--nextjs-dev-tools-scale'] {
+  left: 2px !important;
+  top: 1px !important;
+}

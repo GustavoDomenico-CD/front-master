@@ -31,6 +31,7 @@ export default function AppoimentsPanel() {
   const [agendamentoEdit, setAgendamentoEdit] = useState<Appointment | null>(null);
 
   const { pagination, goToPage } = usePagination({ pageSize: 15 });
+  const displayName = (user?.username || '').split('@')[0] || 'usuário';
 
   useEffect(() => {
     checkSession().catch(() => router.push('/painel-login'));
@@ -83,7 +84,7 @@ export default function AppoimentsPanel() {
   return (
     <div className="painel-container">
       <header>
-        <h1>Olá, {user?.username}</h1>
+        <h1>Olá, {displayName}</h1>
         <button type="button" onClick={() => router.push('/chatbot')}>
           Chatbot
         </button>
@@ -123,7 +124,25 @@ export default function AppoimentsPanel() {
         />
       </section>
 
-      <GraficosDashboard chartsData={chartsData} />
+      <section style={{ marginTop: 16 }}>
+        <span
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            borderRadius: 999,
+            background: '#eef2ff',
+            color: '#3730a3',
+            padding: '4px 10px',
+            fontSize: 12,
+            fontWeight: 700,
+            letterSpacing: '0.3px',
+            marginBottom: 8,
+          }}
+        >
+          ChartJS
+        </span>
+        <GraficosDashboard chartsData={chartsData} />
+      </section>
 
       {modalOpen && agendamentoEdit && (
         <EditarAgendamentoModal

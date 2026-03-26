@@ -48,8 +48,19 @@ export default function ChatbotPage() {
   if (checking) return <LoadingSpinner fullScreen text="Carregando chat..." />
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <ChatManager principal={principal} />
+    <div
+      style={{
+        minHeight: '100dvh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '16px',
+        background: 'var(--chat-page-bg, #f8fafc)',
+      }}
+    >
+      <div style={{ width: '100%', maxWidth: 560, margin: '0 auto' }}>
+        <ChatManager principal={principal} />
+      </div>
     </div>
   )
 }

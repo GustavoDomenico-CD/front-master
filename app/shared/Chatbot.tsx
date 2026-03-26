@@ -56,6 +56,24 @@ const DENTISTRY_CONSULTATION_OPTIONS = [
   'Dor de dente / urgencia',
 ]
 
+const DENTISTRY_APPOINTMENT_SERVICES = [
+  'Consulta odontologica de avaliacao',
+  'Limpeza dental (profilaxia)',
+  'Aplicacao de fluor',
+  'Clareamento dental',
+  'Restauracao (obturação)',
+  'Tratamento de canal',
+  'Extracao simples',
+  'Extracao de siso',
+  'Implante dentario',
+  'Protese dentaria',
+  'Aparelho ortodontico',
+  'Manutencao ortodontica',
+  'Periodontia (tratamento da gengiva)',
+  'Odontopediatria',
+  'Urgencia odontologica',
+]
+
 const fadeIn = keyframes`
   from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: translateY(0); }
@@ -64,6 +82,7 @@ const fadeIn = keyframes`
 const Shell = styled.section`
   width: 100%;
   max-width: 560px;
+  align-self: center;
   background: white;
   border: 1px solid ${theme.colors.border};
   border-radius: ${theme.radius.lg};
@@ -440,6 +459,25 @@ export default function ChatManager({ apiBaseUrl = '', userId, principal }: Chat
   const [patientLoading, setPatientLoading] = useState(false)
   const [patientError, setPatientError] = useState<string | null>(null)
 
+  // ─── Dental Appointment Scheduling (via Chatbot) ───────────────
+  const [showSchedulePanel, setShowSchedulePanel] = useState(false)
+  const [scheduleLoading, setScheduleLoading] = useState(false)
+  const [scheduleError, setScheduleError] = useState<string | null>(null)
+  const [scheduleForm, setScheduleForm] = useState({
+    patientName: '',
+    email: '',
+    phone: '',
+    service: '',
+    professional: '',
+    date: '',
+    hour: '',
+    duration: '60',
+    observations: '',
+    lgpdConsent: false,
+    lgpdPurpose: 'agendamento_consulta_odontologica',
+    lgpdPolicyVersion: '1.0',
+  })
+
   /**
    * Este chat foi originalmente feito para um "chatbot backend" externo (ex.: :8080).
    * No nosso app, esse serviço pode não estar rodando — então só chamamos API se
@@ -495,7 +533,7 @@ export default function ChatManager({ apiBaseUrl = '', userId, principal }: Chat
 
   const showWelcomeMessage = () => {
     const welcomeMessage =
-      'Olá! Sou o Gustavinho, a assistente virtual da Edge Machine. Posso ajudar com dúvidas ou agendamentos. Como posso ajudar?'
+      'Olá! Posso ajudar com dúvidas ou agendamentos. Como posso ajudar?'
     addMessage(welcomeMessage, false, {
       suggestions: ['Agendar serviço', 'Dúvidas sobre serviços', 'Quem Somos', 'Cadastrar paciente'],
     })
@@ -578,6 +616,12 @@ export default function ChatManager({ apiBaseUrl = '', userId, principal }: Chat
     return option.toLowerCase().includes(query)
   }).slice(0, 6)
 
+  const filteredDentalServices = DENTISTRY_APPOINTMENT_SERVICES.filter((option) => {
+    const query = scheduleForm.service.trim().toLowerCase()
+    if (!query) return true
+    return option.toLowerCase().includes(query)
+  }).slice(0, 7)
+
   const handleRegisterPatient = async () => {
     if (patientLoading) return
     setPatientError(null)
@@ -634,6 +678,100 @@ export default function ChatManager({ apiBaseUrl = '', userId, principal }: Chat
       addMessage(msg, false)
     } finally {
       setPatientLoading(false)
+    }
+  }
+
+  const handleScheduleAppointment = async () => {
+    if (scheduleLoading) return
+    setScheduleError(null)
+
+    const requiredMissing =
+      !scheduleForm.patientName.trim() ||
+      !scheduleForm.email.trim() ||
+      !scheduleForm.phone.trim() ||
+      !scheduleForm.service.trim() ||
+      !scheduleForm.date ||
+      !scheduleForm.hour
+
+    if (requiredMissing) {
+      setScheduleError('Preencha nome, e-mail, telefone, servico, data e horario.')
+      return
+    }
+
+    if (!scheduleForm.lgpdConsent) {
+      setScheduleError('O consentimento LGPD e obrigatorio para concluir o agendamento.')
+      return
+    }
+
+    setScheduleLoading(true)
+    try {
+      const payload = {
+        date: scheduleForm.date,
+        hour: Number(scheduleForm.hour.split(':')[0]),
+        duration: Number(scheduleForm.duration) || 60,
+        username: scheduleForm.patientName.trim(),
+        email: scheduleForm.email.trim(),
+        telephone: scheduleForm.phone.trim(),
+        service: scheduleForm.service.trim(),
+        professional: scheduleForm.professional.trim() || 'A definir',
+        typeOfService: 'odontologia',
+        type_appointment: 'consulta',
+        local: 'clinica odontologica',
+        observations: scheduleForm.observations.trim() || undefined,
+        lgpd: {
+          consentGiven: true,
+          consentAt: new Date().toISOString(),
+          purpose: scheduleForm.lgpdPurpose,
+          policyVersion: scheduleForm.lgpdPolicyVersion,
+          legalBasis: 'consentimento_titular',
+          dataMinimization: true,
+        },
+      }
+
+      const res = await fetch('/api/admin/appoiments/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(payload),
+      })
+      const data = (await res.json().catch(() => ({}))) as {
+        status?: string
+        success?: boolean
+        mensagem?: string
+        message?: string
+      }
+
+      const ok = res.ok && (data.success === true || data.status === 'sucesso' || data.status === 'success')
+      if (!ok) {
+        throw new Error(data.mensagem || data.message || 'Nao foi possivel concluir o agendamento.')
+      }
+
+      addMessage(
+        `Agendamento odontologico criado para ${scheduleForm.patientName.trim()} em ${scheduleForm.date} as ${scheduleForm.hour}.`,
+        false,
+      )
+
+      setShowSchedulePanel(false)
+      setScheduleForm({
+        patientName: '',
+        email: '',
+        phone: '',
+        service: '',
+        professional: '',
+        date: '',
+        hour: '',
+        duration: '60',
+        observations: '',
+        lgpdConsent: false,
+        lgpdPurpose: 'agendamento_consulta_odontologica',
+        lgpdPolicyVersion: '1.0',
+      })
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Falha ao criar agendamento.'
+      setScheduleError(msg)
+      addMessage(msg, false)
+    } finally {
+      setScheduleLoading(false)
     }
   }
 
@@ -833,6 +971,11 @@ export default function ChatManager({ apiBaseUrl = '', userId, principal }: Chat
                 key={index}
                 type="button"
                 onClick={() => {
+                  if (suggestion === 'Agendar serviço') {
+                    setShowSchedulePanel(true)
+                    setScheduleError(null)
+                    return
+                  }
                   if (suggestion === 'Cadastrar paciente') {
                     setShowPatientRegistration(true)
                     setPatientError(null)
@@ -1010,6 +1153,137 @@ export default function ChatManager({ apiBaseUrl = '', userId, principal }: Chat
                 $variant="secondary"
                 onClick={() => setShowPatientRegistration(false)}
                 disabled={patientLoading}
+                style={{ fontSize: '12px', padding: '6px 10px', marginTop: 6 }}
+              >
+                Cancelar
+              </ActionButton>
+            </FormRow>
+          </AddRuleForm>
+        </RegistrationPanel>
+      )}
+
+      {showSchedulePanel && (
+        <RegistrationPanel>
+          <PanelTitle>Agendamento Odontologico</PanelTitle>
+
+          {scheduleError && (
+            <p style={{ fontSize: '12px', color: '#ef4444', margin: '0 0 10px' }}>
+              {scheduleError}
+            </p>
+          )}
+
+          <AddRuleForm style={{ border: 'none', padding: 0, background: 'transparent', marginTop: 0 }}>
+            <FormRow>
+              <SmallInput
+                placeholder="Nome completo do cliente"
+                value={scheduleForm.patientName}
+                onChange={(e) => setScheduleForm((p) => ({ ...p, patientName: e.target.value }))}
+                type="text"
+              />
+              <SmallInput
+                placeholder="E-mail"
+                value={scheduleForm.email}
+                onChange={(e) => setScheduleForm((p) => ({ ...p, email: e.target.value }))}
+                type="email"
+              />
+            </FormRow>
+
+            <FormRow>
+              <SmallInput
+                placeholder="Telefone"
+                value={scheduleForm.phone}
+                onChange={(e) => setScheduleForm((p) => ({ ...p, phone: e.target.value }))}
+                type="tel"
+              />
+              <SmallInput
+                placeholder="Profissional (opcional)"
+                value={scheduleForm.professional}
+                onChange={(e) => setScheduleForm((p) => ({ ...p, professional: e.target.value }))}
+                type="text"
+              />
+            </FormRow>
+
+            <SmallInput
+              placeholder="Servico odontologico (ex.: limpeza, canal, implante)"
+              value={scheduleForm.service}
+              onChange={(e) => setScheduleForm((p) => ({ ...p, service: e.target.value }))}
+              type="text"
+            />
+            <Suggestions aria-label="Sugestoes de servicos odontologicos">
+              {filteredDentalServices.map((option) => (
+                <SuggestionButton
+                  key={option}
+                  type="button"
+                  onClick={() => setScheduleForm((p) => ({ ...p, service: option }))}
+                >
+                  {option}
+                </SuggestionButton>
+              ))}
+            </Suggestions>
+
+            <FormRow>
+              <SmallInput
+                placeholder="Data"
+                value={scheduleForm.date}
+                onChange={(e) => setScheduleForm((p) => ({ ...p, date: e.target.value }))}
+                type="date"
+              />
+              <SmallInput
+                placeholder="Horario"
+                value={scheduleForm.hour}
+                onChange={(e) => setScheduleForm((p) => ({ ...p, hour: e.target.value }))}
+                type="time"
+              />
+            </FormRow>
+
+            <FormRow>
+              <SmallInput
+                placeholder="Duracao (min)"
+                value={scheduleForm.duration}
+                onChange={(e) => setScheduleForm((p) => ({ ...p, duration: e.target.value }))}
+                type="number"
+                min="15"
+                step="15"
+              />
+              <SmallInput
+                placeholder="Finalidade LGPD"
+                value={scheduleForm.lgpdPurpose}
+                onChange={(e) => setScheduleForm((p) => ({ ...p, lgpdPurpose: e.target.value }))}
+                type="text"
+              />
+            </FormRow>
+
+            <SmallInput
+              placeholder="Observacoes (opcional)"
+              value={scheduleForm.observations}
+              onChange={(e) => setScheduleForm((p) => ({ ...p, observations: e.target.value }))}
+              type="text"
+            />
+
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}>
+              <input
+                type="checkbox"
+                checked={scheduleForm.lgpdConsent}
+                onChange={(e) => setScheduleForm((p) => ({ ...p, lgpdConsent: e.target.checked }))}
+              />
+              Autorizo o tratamento dos meus dados para agendamento odontologico (LGPD).
+            </label>
+
+            <FormRow>
+              <ActionButton
+                type="button"
+                $variant="primary"
+                onClick={handleScheduleAppointment}
+                disabled={scheduleLoading}
+                style={{ fontSize: '12px', padding: '6px 10px', marginTop: 6 }}
+              >
+                {scheduleLoading ? 'Agendando...' : 'Confirmar agendamento'}
+              </ActionButton>
+              <ActionButton
+                type="button"
+                $variant="secondary"
+                onClick={() => setShowSchedulePanel(false)}
+                disabled={scheduleLoading}
                 style={{ fontSize: '12px', padding: '6px 10px', marginTop: 6 }}
               >
                 Cancelar

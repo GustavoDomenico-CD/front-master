@@ -7,12 +7,15 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test:routes": "node scripts/smoke-routes.mjs"
+    "test:routes": "node scripts/smoke-routes.mjs",
+    "seed:reports": "node scripts/seed-report-data.mjs"
   },
   "dependencies": {
+    "chart.js": "^4.5.1",
     "lucide-react": "^0.577.0",
     "next": "16.1.6",
     "react": "19.2.3",
+    "react-chartjs-2": "^5.3.1",
     "react-dom": "19.2.3",
     "react-router-dom": "^7.13.1",
     "styled-components": "^6.3.11"
