@@ -2,10 +2,26 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import styled from 'styled-components'
 
 import ChatManager from '@/app/shared/Chatbot'
 import LoadingSpinner from '@/app/shared/LoadingSpinner'
 import { checkSession, postLogout, type UserSession } from '@/app/lib/backend'
+
+const ChatPageWrapper = styled.div`
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: var(--chat-page-bg, #f8fafc);
+`
+
+const ChatContainer = styled.div`
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+`
 
 export default function ChatbotPage() {
   const router = useRouter()
@@ -48,20 +64,11 @@ export default function ChatbotPage() {
   if (checking) return <LoadingSpinner fullScreen text="Carregando chat..." />
 
   return (
-    <div
-      style={{
-        minHeight: '100dvh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '16px',
-        background: 'var(--chat-page-bg, #f8fafc)',
-      }}
-    >
-      <div style={{ width: '100%', maxWidth: 560, margin: '0 auto' }}>
+    <ChatPageWrapper>
+      <ChatContainer>
         <ChatManager principal={principal} />
-      </div>
-    </div>
+      </ChatContainer>
+    </ChatPageWrapper>
   )
 }
 

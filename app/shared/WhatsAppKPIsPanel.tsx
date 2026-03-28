@@ -59,12 +59,18 @@ const ErrorMsg = styled.div`
   border-radius: 8px;
 `
 
+const LoadingText = styled.div`
+  color: #9ca3af;
+  text-align: center;
+  padding: 20px;
+`
+
 export default function WhatsAppKPIsPanel() {
   const { kpis, loading, error, load } = useWhatsAppKPIs()
 
   useEffect(() => { load() }, [load])
 
-  if (loading) return <Container><Title>KPIs WhatsApp</Title><div style={{ color: '#9ca3af', textAlign: 'center', padding: 20 }}>Carregando...</div></Container>
+  if (loading) return <Container><Title>KPIs WhatsApp</Title><LoadingText>Carregando...</LoadingText></Container>
   if (error) return <Container><Title>KPIs WhatsApp</Title><ErrorMsg>{error}</ErrorMsg></Container>
   if (!kpis) return null
 

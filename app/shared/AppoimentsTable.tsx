@@ -39,31 +39,39 @@ const Table = styled.table`
 const ActionButtons = styled.div`
   display: flex;
   gap: 8px;
+`;
 
-  button {
-    width: 34px;
-    height: 34px;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s;
+const EditButton = styled.button`
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  background: #dbeafe;
+  color: #1e40af;
 
-    &.edit-btn {
-      background: #dbeafe;
-      color: #1e40af;
-      &:hover { background: #bfdbfe; }
-    }
+  &:hover { background: #bfdbfe; }
+`;
 
-    &.delete-btn {
-      background: #fee2e2;
-      color: #b91c1c;
-      &:hover { background: #fecaca; }
-    }
-  }`
-;
+const DeleteButton = styled.button`
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  background: #fee2e2;
+  color: #b91c1c;
+
+  &:hover { background: #fecaca; }
+`;
 
 interface AppoimentsTableProps {
   agendamentos: Appointment[];
@@ -111,12 +119,12 @@ export const AppoimentsTable: React.FC<AppoimentsTableProps> = ({ agendamentos, 
               <td>{agendamento.duration}</td>
               <td>
                 <ActionButtons>
-                  <button className="edit-btn" onClick={() => onEdit(agendamento)}>
+                  <EditButton onClick={() => onEdit(agendamento)}>
                     Edit
-                  </button>
-                  <button className="delete-btn" onClick={() => onDelete(agendamento.id)}>
+                  </EditButton>
+                  <DeleteButton onClick={() => onDelete(agendamento.id)}>
                     Delete
-                  </button>
+                  </DeleteButton>
                 </ActionButtons>
               </td>
             </tr>

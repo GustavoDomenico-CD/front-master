@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import styled from 'styled-components';
 
 import { Appointment, Filters } from '@/app/types/Appoiments';
 import useSession from '@/app/hooks/useSession';
@@ -25,6 +26,88 @@ import WhatsAppMessagesPanel from '@/app/shared/WhatsAppMessagesPanel';
 import WhatsAppContactsPanel from '@/app/shared/WhatsAppContactsPanel';
 import WhatsAppTemplatesPanel from '@/app/shared/WhatsAppTemplatesPanel';
 import WhatsAppKPIsPanel from '@/app/shared/WhatsAppKPIsPanel';
+
+const PageWrapper = styled.div`
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 24px 16px;
+`
+
+const PageHeader = styled.header`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e5e7eb;
+`
+
+const PageTitle = styled.h1`
+  margin: 0;
+  font-size: 22px;
+  color: #1f2937;
+`
+
+const RoleBadge = styled.span<{ $isAdmin: boolean }>`
+  display: inline-flex;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  background: ${p => p.$isAdmin ? '#dbeafe' : '#f3f4f6'};
+  color: ${p => p.$isAdmin ? '#1d4ed8' : '#6b7280'};
+  margin-top: 4px;
+`
+
+const LogoutButton = styled.button`
+  padding: 8px 16px;
+  background: #f3f4f6;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  cursor: pointer;
+`
+
+const Section = styled.section<{ $marginBottom?: number; $marginTop?: number }>`
+  margin-bottom: ${p => p.$marginBottom ? `${p.$marginBottom}px` : '0'};
+  margin-top: ${p => p.$marginTop ? `${p.$marginTop}px` : '0'};
+`
+
+const ChartJsBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #3730a3;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  margin-bottom: 8px;
+`
+
+const ChatbotContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  padding: 20px;
+`
+
+const ChatbotButton = styled.button`
+  padding: 16px 32px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+`
+
+const WhatsAppSection = styled.div`
+  margin-top: 20px;
+`
 
 const TABS: TabItem[] = [
   { id: 'agendamentos', label: 'Agendamentos' },
@@ -101,50 +184,22 @@ export default function AppoimentsPanel() {
   if (sessionLoading) return <LoadingSpinner fullScreen />;
 
   return (
-    <div style={{ maxWidth: 1280, margin: '0 auto', padding: '24px 16px' }}>
-      <header style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 20,
-        paddingBottom: 16,
-        borderBottom: '1px solid #e5e7eb',
-      }}>
+    <PageWrapper>
+      <PageHeader>
         <div>
-          <h1 style={{ margin: 0, fontSize: 22, color: '#1f2937' }}>
+          <PageTitle>
             Ola, {displayName}
-          </h1>
+          </PageTitle>
           {user?.role && (
-            <span style={{
-              display: 'inline-flex',
-              padding: '2px 8px',
-              borderRadius: 999,
-              fontSize: 11,
-              fontWeight: 700,
-              background: user.role === 'admin' ? '#dbeafe' : '#f3f4f6',
-              color: user.role === 'admin' ? '#1d4ed8' : '#6b7280',
-              marginTop: 4,
-            }}>
+            <RoleBadge $isAdmin={user.role === 'admin'}>
               {user.role.toUpperCase()}
-            </span>
+            </RoleBadge>
           )}
         </div>
-        <button
-          onClick={handleLogout}
-          style={{
-            padding: '8px 16px',
-            background: '#f3f4f6',
-            border: 'none',
-            borderRadius: 8,
-            fontSize: 14,
-            fontWeight: 600,
-            color: '#374151',
-            cursor: 'pointer',
-          }}
-        >
+        <LogoutButton onClick={handleLogout}>
           Sair
-        </button>
-      </header>
+        </LogoutButton>
+      </PageHeader>
 
       {statusMessage && (
         <StatusMessage
@@ -161,12 +216,11 @@ export default function AppoimentsPanel() {
         userRole={user?.role}
       />
 
-      {/* ─── Aba: Agendamentos ─── */}
       {activeTab === 'agendamentos' && (
         <>
-          <section style={{ marginBottom: 20 }}>
+          <Section $marginBottom={20}>
             <AppoimentsFilters onApply={handleApplyFilters} />
-          </section>
+          </Section>
 
           <section>
             {loading && <LoadingSpinner />}
@@ -202,84 +256,50 @@ export default function AppoimentsPanel() {
         </>
       )}
 
-      {/* ─── Aba: KPIs & Graficos ─── */}
       {activeTab === 'kpis' && (
         <>
           <KPICards kpis={kpis} loading={kpisLoading} />
-          <section style={{ marginTop: 20 }}>
-            <span style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              borderRadius: 999,
-              background: '#eef2ff',
-              color: '#3730a3',
-              padding: '4px 10px',
-              fontSize: 12,
-              fontWeight: 700,
-              letterSpacing: '0.3px',
-              marginBottom: 8,
-            }}>
+          <Section $marginTop={20}>
+            <ChartJsBadge>
               ChartJS
-            </span>
+            </ChartJsBadge>
             <GraficosDashboard chartsData={chartsData} />
-          </section>
+          </Section>
         </>
       )}
 
-      {/* ─── Aba: Integracoes ─── */}
       {activeTab === 'integracoes' && (
         <IntegrationsStatus />
       )}
 
-      {/* ─── Aba: Chatbot ─── */}
       {activeTab === 'chatbot' && (
-        <div style={{
-          display: 'flex',
-          justifyContent: 'center',
-          padding: 20,
-        }}>
-          <button
-            onClick={() => router.push('/chatbot')}
-            style={{
-              padding: '16px 32px',
-              background: '#3b82f6',
-              color: 'white',
-              border: 'none',
-              borderRadius: 12,
-              fontSize: 16,
-              fontWeight: 600,
-              cursor: 'pointer',
-            }}
-          >
+        <ChatbotContainer>
+          <ChatbotButton onClick={() => router.push('/chatbot')}>
             Abrir Chatbot
-          </button>
-        </div>
+          </ChatbotButton>
+        </ChatbotContainer>
       )}
 
-      {/* ─── Aba: WhatsApp Mensagens (Admin) ─── */}
       {activeTab === 'whatsapp-mensagens' && user?.role === 'admin' && (
         <>
           <WhatsAppKPIsPanel />
-          <div style={{ marginTop: 20 }}>
+          <WhatsAppSection>
             <WhatsAppMessagesPanel />
-          </div>
+          </WhatsAppSection>
         </>
       )}
 
-      {/* ─── Aba: WhatsApp Contatos (Admin) ─── */}
       {activeTab === 'whatsapp-contatos' && user?.role === 'admin' && (
         <WhatsAppContactsPanel />
       )}
 
-      {/* ─── Aba: WhatsApp Templates (Admin) ─── */}
       {activeTab === 'whatsapp-templates' && user?.role === 'admin' && (
         <WhatsAppTemplatesPanel />
       )}
 
-      {/* ─── Aba: WhatsApp Config (Admin) ─── */}
       {activeTab === 'whatsapp-config' && user?.role === 'admin' && (
         <WhatsAppConfigPanel />
       )}
-    </div>
+    </PageWrapper>
   );
 }

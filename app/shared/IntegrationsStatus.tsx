@@ -90,6 +90,40 @@ const ErrorMessage = styled.div`
   line-height: 1.4;
 `
 
+const HeaderRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+`
+
+const PollingButton = styled.button<{ $isPolling: boolean }>`
+  margin-right: 12px;
+  padding: 6px 12px;
+  font-size: 13px;
+  background: ${p => p.$isPolling ? '#dcfce7' : '#fee2e2'};
+  color: ${p => p.$isPolling ? '#166534' : '#991b1b'};
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+`
+
+const RefreshButton = styled.button<{ $loading: boolean }>`
+  padding: 6px 12px;
+  font-size: 13px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: ${p => p.$loading ? 'not-allowed' : 'pointer'};
+  opacity: ${p => p.$loading ? 0.7 : 1};
+`
+
+const ErrorBanner = styled.div`
+  color: #dc2626;
+  margin-bottom: 16px;
+`
+
 export default function IntegrationsStatus(){
     const {status, loading, error, refetch, isPolling,togglePolling} = useIntegrationsStatus({
         autoFetch: true,
@@ -105,45 +139,20 @@ const services = [
 
 return (
    <StatusContainer>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+      <HeaderRow>
         <Title>Status das Integrações</Title>
         <div>
-          <button
-            onClick={() => togglePolling()}
-            style={{
-              marginRight: '12px',
-              padding: '6px 12px',
-              fontSize: '13px',
-              background: isPolling ? '#dcfce7' : '#fee2e2',
-              color: isPolling ? '#166534' : '#991b1b',
-              border: 'none',
-              borderRadius: '6px',
-              cursor: 'pointer',
-            }}
-          >
+          <PollingButton $isPolling={isPolling} onClick={() => togglePolling()}>
             {isPolling ? 'Polling: ON' : 'Polling: OFF'}
-          </button>
+          </PollingButton>
 
-          <button
-            onClick={refetch}
-            disabled={loading}
-            style={{
-              padding: '6px 12px',
-              fontSize: '13px',
-              background: '#3b82f6',
-              color: 'white',
-              border: 'none',
-              borderRadius: '6px',
-              cursor: loading ? 'not-allowed' : 'pointer',
-              opacity: loading ? 0.7 : 1,
-            }}
-          >
+          <RefreshButton $loading={loading} onClick={refetch} disabled={loading}>
             {loading ? 'Atualizando...' : 'Atualizar agora'}
-          </button>
+          </RefreshButton>
         </div>
-      </div>
+      </HeaderRow>
 
-      {error && <div style={{ color: '#dc2626', marginBottom: '16px' }}>{error}</div>}
+      {error && <ErrorBanner>{error}</ErrorBanner>}
 
       <StatusGrid>
         {services.map(service => {

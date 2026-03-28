@@ -155,6 +155,10 @@ const Select = styled.select`
   background: white;
 `
 
+const PaginationWrapper = styled.div`
+  margin-top: 16px;
+`
+
 export default function WhatsAppMessagesPanel() {
   const { messages, pages, loading, error, load, send } = useWhatsAppMessages()
   const [phone, setPhone] = useState('')
@@ -234,9 +238,9 @@ export default function WhatsAppMessagesPanel() {
       </MessageList>
 
       {pages > 1 && (
-        <div style={{ marginTop: 16 }}>
+        <PaginationWrapper>
           <Pagination currentPage={page} totalPages={pages} onPageChange={setPage} />
-        </div>
+        </PaginationWrapper>
       )}
     </Container>
   )

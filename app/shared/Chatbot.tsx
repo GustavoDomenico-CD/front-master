@@ -396,6 +396,82 @@ const TextInput = styled.input`
   }
 `
 
+const ErrorText = styled.p`
+  font-size: 12px;
+  color: #ef4444;
+  margin: 0 0 10px;
+`
+
+const EmptyRuleText = styled.p`
+  font-size: 12px;
+  color: ${theme.colors.gray};
+  margin: 0 0 8px;
+`
+
+const SmallActionButton = styled.button<{ $variant: 'primary' | 'secondary' }>`
+  border: ${(p) => (p.$variant === 'primary' ? 'none' : `1px solid ${theme.colors.border}`)};
+  background: ${(p) => (p.$variant === 'primary' ? theme.colors.primary : 'white')};
+  color: ${(p) => (p.$variant === 'primary' ? 'white' : theme.colors.dark)};
+  border-radius: ${theme.radius.md};
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  margin-top: 6px;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: ${theme.shadow.sm};
+  }
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
+  }
+`
+
+const SmallNewRuleButton = styled.button`
+  border: none;
+  background: ${theme.colors.primary};
+  color: white;
+  border-radius: ${theme.radius.md};
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  margin-top: 4px;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: ${theme.shadow.sm};
+  }
+`
+
+const ProactiveHeaderButton = styled(SmallButton)`
+  color: white;
+  font-size: 18px;
+  margin-left: auto;
+`
+
+const TransparentForm = styled(AddRuleForm)`
+  border: none;
+  padding: 0;
+  background: transparent;
+  margin-top: 0;
+`
+
+const LgpdLabel = styled.label`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+`
+
 const ActionButton = styled.button<{ $variant: 'primary' | 'secondary' }>`
   border: ${(p) => (p.$variant === 'primary' ? 'none' : `1px solid ${theme.colors.border}`)};
   background: ${(p) => (p.$variant === 'primary' ? theme.colors.primary : 'white')};
@@ -928,13 +1004,12 @@ export default function ChatManager({ apiBaseUrl = '', userId, principal }: Chat
           <Subtitle>Seu Agente Virtual da Edge Machine</Subtitle>
         </HeaderText>
         {userId && (
-          <SmallButton
+          <ProactiveHeaderButton
             onClick={() => setShowProactivePanel((v) => !v)}
             title="Configurar comportamento proativo"
-            style={{ color: 'white', fontSize: '18px', marginLeft: 'auto' }}
           >
             {showProactivePanel ? '\u2715' : '\u2699'}
-          </SmallButton>
+          </ProactiveHeaderButton>
         )}
       </Header>
 
@@ -997,10 +1072,10 @@ export default function ChatManager({ apiBaseUrl = '', userId, principal }: Chat
           <PanelTitle>Comportamento Proativo do Agente</PanelTitle>
 
           {proactiveRules.length === 0 && !showAddRule && (
-            <p style={{ fontSize: '12px', color: theme.colors.gray, margin: '0 0 8px' }}>
+            <EmptyRuleText>
               Nenhuma regra configurada. O agente pode enviar mensagens automaticamente
               com base em intervalos, horários ou eventos.
-            </p>
+            </EmptyRuleText>
           )}
 
           {proactiveRules.map((rule) => (
@@ -1043,34 +1118,30 @@ export default function ChatManager({ apiBaseUrl = '', userId, principal }: Chat
                 onChange={(e) => setNewRuleMessage(e.target.value)}
               />
               <FormRow>
-                <ActionButton
+                <SmallActionButton
                   type="button"
                   $variant="primary"
                   onClick={addProactiveRule}
                   disabled={!newRuleMessage.trim()}
-                  style={{ fontSize: '12px', padding: '6px 10px' }}
                 >
                   Salvar
-                </ActionButton>
-                <ActionButton
+                </SmallActionButton>
+                <SmallActionButton
                   type="button"
                   $variant="secondary"
                   onClick={() => setShowAddRule(false)}
-                  style={{ fontSize: '12px', padding: '6px 10px' }}
                 >
                   Cancelar
-                </ActionButton>
+                </SmallActionButton>
               </FormRow>
             </AddRuleForm>
           ) : (
-            <ActionButton
+            <SmallNewRuleButton
               type="button"
-              $variant="primary"
               onClick={() => setShowAddRule(true)}
-              style={{ fontSize: '12px', padding: '6px 10px', marginTop: '4px' }}
             >
               + Nova regra
-            </ActionButton>
+            </SmallNewRuleButton>
           )}
         </ProactivePanel>
       )}
@@ -1080,12 +1151,12 @@ export default function ChatManager({ apiBaseUrl = '', userId, principal }: Chat
           <PanelTitle>Cadastro de Paciente</PanelTitle>
 
           {patientError && (
-            <p style={{ fontSize: '12px', color: '#ef4444', margin: '0 0 10px' }}>
+            <ErrorText>
               {patientError}
-            </p>
+            </ErrorText>
           )}
 
-          <AddRuleForm style={{ border: 'none', padding: 0, background: 'transparent', marginTop: 0 }}>
+          <TransparentForm>
             <FormRow>
               <SmallInput
                 placeholder="E-mail do paciente"
@@ -1137,28 +1208,26 @@ export default function ChatManager({ apiBaseUrl = '', userId, principal }: Chat
             </Suggestions>
 
             <FormRow>
-              <ActionButton
+              <SmallActionButton
                 type="button"
                 $variant="primary"
                 onClick={handleRegisterPatient}
                 disabled={
                   patientLoading || !patientForm.email.trim() || patientForm.password.length < 1
                 }
-                style={{ fontSize: '12px', padding: '6px 10px', marginTop: 6 }}
               >
                 {patientLoading ? 'Cadastrando...' : 'Cadastrar'}
-              </ActionButton>
-              <ActionButton
+              </SmallActionButton>
+              <SmallActionButton
                 type="button"
                 $variant="secondary"
                 onClick={() => setShowPatientRegistration(false)}
                 disabled={patientLoading}
-                style={{ fontSize: '12px', padding: '6px 10px', marginTop: 6 }}
               >
                 Cancelar
-              </ActionButton>
+              </SmallActionButton>
             </FormRow>
-          </AddRuleForm>
+          </TransparentForm>
         </RegistrationPanel>
       )}
 
@@ -1167,12 +1236,12 @@ export default function ChatManager({ apiBaseUrl = '', userId, principal }: Chat
           <PanelTitle>Agendamento Odontologico</PanelTitle>
 
           {scheduleError && (
-            <p style={{ fontSize: '12px', color: '#ef4444', margin: '0 0 10px' }}>
+            <ErrorText>
               {scheduleError}
-            </p>
+            </ErrorText>
           )}
 
-          <AddRuleForm style={{ border: 'none', padding: 0, background: 'transparent', marginTop: 0 }}>
+          <TransparentForm>
             <FormRow>
               <SmallInput
                 placeholder="Nome completo do cliente"
@@ -1260,36 +1329,34 @@ export default function ChatManager({ apiBaseUrl = '', userId, principal }: Chat
               type="text"
             />
 
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}>
+            <LgpdLabel>
               <input
                 type="checkbox"
                 checked={scheduleForm.lgpdConsent}
                 onChange={(e) => setScheduleForm((p) => ({ ...p, lgpdConsent: e.target.checked }))}
               />
               Autorizo o tratamento dos meus dados para agendamento odontologico (LGPD).
-            </label>
+            </LgpdLabel>
 
             <FormRow>
-              <ActionButton
+              <SmallActionButton
                 type="button"
                 $variant="primary"
                 onClick={handleScheduleAppointment}
                 disabled={scheduleLoading}
-                style={{ fontSize: '12px', padding: '6px 10px', marginTop: 6 }}
               >
                 {scheduleLoading ? 'Agendando...' : 'Confirmar agendamento'}
-              </ActionButton>
-              <ActionButton
+              </SmallActionButton>
+              <SmallActionButton
                 type="button"
                 $variant="secondary"
                 onClick={() => setShowSchedulePanel(false)}
                 disabled={scheduleLoading}
-                style={{ fontSize: '12px', padding: '6px 10px', marginTop: 6 }}
               >
                 Cancelar
-              </ActionButton>
+              </SmallActionButton>
             </FormRow>
-          </AddRuleForm>
+          </TransparentForm>
         </RegistrationPanel>
       )}
 
