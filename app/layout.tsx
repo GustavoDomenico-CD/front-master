@@ -13,10 +13,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR">
-      <body
-        style={{ fontFamily: "system-ui, -apple-system, sans-serif" }}
-        className="antialiased"
-      >
+      <body className="antialiased">
         {children}
       </body>
     </html>

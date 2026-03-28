@@ -176,6 +176,24 @@ const Actions = styled.div`
   gap: 6px;
 `
 
+const CountLabel = styled.span`
+  font-size: 14px;
+  color: #6b7280;
+`
+
+const FieldSpaced = styled(Field)`
+  margin-bottom: 12px;
+`
+
+const ClickableBadge = styled(ActiveBadge)`
+  cursor: pointer;
+`
+
+const SmallDangerButton = styled(Button)`
+  padding: 4px 10px;
+  font-size: 12px;
+`
+
 export default function WhatsAppTemplatesPanel() {
   const { templates, loading, error, load, create, update, remove } = useWhatsAppTemplates()
   const [showForm, setShowForm] = useState(false)
@@ -219,7 +237,7 @@ export default function WhatsAppTemplatesPanel() {
       {error && <ErrorMsg>{error}</ErrorMsg>}
 
       <TopBar>
-        <span style={{ fontSize: 14, color: '#6b7280' }}>{templates.length} template(s)</span>
+        <CountLabel>{templates.length} template(s)</CountLabel>
         <Button onClick={() => setShowForm(!showForm)} $variant={showForm ? 'secondary' : 'primary'}>
           {showForm ? 'Cancelar' : 'Novo Template'}
         </Button>
@@ -249,10 +267,10 @@ export default function WhatsAppTemplatesPanel() {
               <Input value={form.variables} onChange={e => setForm(p => ({ ...p, variables: e.target.value }))} placeholder="nome, data, horario" />
             </Field>
           </FormGrid>
-          <Field style={{ marginBottom: 12 }}>
+          <FieldSpaced>
             <Label>Conteudo</Label>
             <Textarea value={form.content} onChange={e => setForm(p => ({ ...p, content: e.target.value }))} placeholder="Ola {{1}}, sua consulta esta marcada para {{2}} as {{3}}." />
-          </Field>
+          </FieldSpaced>
           <Button onClick={handleCreate} disabled={!form.name.trim() || !form.content.trim()}>
             {loading ? 'Salvando...' : 'Criar Template'}
           </Button>
@@ -276,12 +294,12 @@ export default function WhatsAppTemplatesPanel() {
                 </TemplateMeta>
               </div>
               <Actions>
-                <ActiveBadge $active={t.isActive} style={{ cursor: 'pointer' }} onClick={() => handleToggle(t.id, t.isActive)}>
+                <ClickableBadge $active={t.isActive} onClick={() => handleToggle(t.id, t.isActive)}>
                   {t.isActive ? 'Ativo' : 'Inativo'}
-                </ActiveBadge>
-                <Button $variant="danger" onClick={() => handleDelete(t.id)} style={{ padding: '4px 10px', fontSize: 12 }}>
+                </ClickableBadge>
+                <SmallDangerButton $variant="danger" onClick={() => handleDelete(t.id)}>
                   Remover
-                </Button>
+                </SmallDangerButton>
               </Actions>
             </TemplateHeader>
             <TemplateContent>{t.content}</TemplateContent>

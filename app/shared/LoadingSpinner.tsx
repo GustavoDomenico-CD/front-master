@@ -6,13 +6,14 @@ const spin = keyframes`
 100% { transform: rotate(360deg); }
 `;
 
-const SpinnerContainer = styled.div`
+const SpinnerContainer = styled.div<{ $fullScreen: boolean }>`
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 40px 20px;
   color: ${theme.colors.gray};
+  ${p => p.$fullScreen && 'height: 100vh;'}
 `;
 
 const Spinner = styled.div`
@@ -32,7 +33,7 @@ const Text = styled.p`
 
 export default function LoadingSpinner({ fullScreen = false, text = "Carregando..." }) {
   return (
-    <SpinnerContainer style={fullScreen ? { height: '100vh' } : {}}>
+    <SpinnerContainer $fullScreen={fullScreen}>
       <Spinner />
       <Text>{text}</Text>
     </SpinnerContainer>

@@ -135,6 +135,19 @@ const EmptyState = styled.div`
   font-size: 14px;
 `
 
+const CountLabel = styled.span`
+  font-size: 14px;
+  color: #6b7280;
+`
+
+const SmallButton = styled(Button)`
+  padding: 6px 12px;
+`
+
+const PaginationWrapper = styled.div`
+  margin-top: 16px;
+`
+
 export default function WhatsAppContactsPanel() {
   const { contacts, pages, loading, error, load, upsert, remove, toggleBlock } = useWhatsAppContacts()
   const [showForm, setShowForm] = useState(false)
@@ -169,9 +182,9 @@ export default function WhatsAppContactsPanel() {
       {error && <ErrorMsg>{error}</ErrorMsg>}
 
       <TopBar>
-        <span style={{ fontSize: 14, color: '#6b7280' }}>
+        <CountLabel>
           {contacts.length} contato(s)
-        </span>
+        </CountLabel>
         <Button onClick={() => setShowForm(!showForm)} $variant={showForm ? 'secondary' : 'primary'}>
           {showForm ? 'Cancelar' : 'Novo Contato'}
         </Button>
@@ -201,20 +214,20 @@ export default function WhatsAppContactsPanel() {
             </ContactDetail>
           </ContactInfo>
           <Actions>
-            <Button $variant="warning" onClick={() => toggleBlock(c.id)} style={{ padding: '6px 12px' }}>
+            <SmallButton $variant="warning" onClick={() => toggleBlock(c.id)}>
               {c.isBlocked ? 'Desbloquear' : 'Bloquear'}
-            </Button>
-            <Button $variant="danger" onClick={() => handleDelete(c.id)} style={{ padding: '6px 12px' }}>
+            </SmallButton>
+            <SmallButton $variant="danger" onClick={() => handleDelete(c.id)}>
               Remover
-            </Button>
+            </SmallButton>
           </Actions>
         </ContactCard>
       ))}
 
       {pages > 1 && (
-        <div style={{ marginTop: 16 }}>
+        <PaginationWrapper>
           <Pagination currentPage={page} totalPages={pages} onPageChange={setPage} />
-        </div>
+        </PaginationWrapper>
       )}
     </Container>
   )

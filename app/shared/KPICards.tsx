@@ -48,6 +48,18 @@ const IconWrapper = styled.div`
   opacity: 0.8;
 `;
 
+const SkeletonBar = styled.div`
+  height: 120px;
+  background: #f3f4f6;
+  border-radius: 8px;
+`;
+
+const EmptyState = styled.div`
+  text-align: center;
+  padding: 40px;
+  color: #6b7280;
+`;
+
 interface KPICardsProps {
   kpis: KPI | null;
   loading?: boolean;
@@ -59,7 +71,7 @@ export default function KPICards({ kpis, loading = false }: KPICardsProps) {
       <CardsGrid>
         {[...Array(6)].map((_, i) => (
           <Card key={i}>
-            <div style={{ height: '120px', background: '#f3f4f6', borderRadius: '8px' }} />
+            <SkeletonBar />
           </Card>
         ))}
       </CardsGrid>
@@ -67,7 +79,7 @@ export default function KPICards({ kpis, loading = false }: KPICardsProps) {
   }
 
   if (!kpis) {
-    return <div style={{ textAlign: 'center', padding: '40px', color: '#6b7280' }}>Nenhum dado de KPI disponível</div>;
+    return <EmptyState>Nenhum dado de KPI disponível</EmptyState>;
   }
 
   const formatCurrency = (value: number) => `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;

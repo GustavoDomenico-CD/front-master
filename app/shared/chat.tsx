@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import styled, { keyframes } from 'styled-components';
 
 interface Message {
   text: string;
@@ -14,6 +15,232 @@ interface Options {
 interface ChatManagerProps {
   apiBaseUrl?: string;
 }
+
+const fadeIn = keyframes`
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+`
+
+const dotBounce = keyframes`
+  0%, 20% { transform: translateY(0); opacity: 0.55; }
+  50% { transform: translateY(-4px); opacity: 1; }
+  80%, 100% { transform: translateY(0); opacity: 0.55; }
+`
+
+const ChatSection = styled.section`
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+`
+
+const AppContainer = styled.div`
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  animation: ${fadeIn} 0.25s ease both;
+`
+
+const ChatHeader = styled.header`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 18px;
+  background: linear-gradient(135deg, #3b82f6 0%, #764ba2 100%);
+  color: white;
+`
+
+const ChatAvatar = styled.img`
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.15);
+  padding: 6px;
+`
+
+const HeaderContent = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+`
+
+const HeaderTitle = styled.h1`
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.2;
+`
+
+const HeaderSubtitle = styled.p`
+  margin: 0;
+  opacity: 0.9;
+  font-size: 12px;
+  line-height: 1.2;
+`
+
+const MessagesContainer = styled.main`
+  height: min(460px, 55vh);
+  overflow: auto;
+  padding: 14px 14px 6px;
+
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: #e5e7eb;
+    border-radius: 999px;
+  }
+`
+
+const MessageBubble = styled.div<{ $isUser: boolean }>`
+  display: flex;
+  justify-content: ${p => p.$isUser ? 'flex-end' : 'flex-start'};
+  margin: 10px 0;
+`
+
+const BubbleContent = styled.div<{ $isUser: boolean }>`
+  max-width: 85%;
+  border-radius: 14px;
+  padding: 10px 12px;
+  color: ${p => p.$isUser ? 'white' : '#1f2937'};
+  background: ${p => p.$isUser ? '#3b82f6' : '#f8fafc'};
+  border: ${p => p.$isUser ? 'none' : '1px solid #e5e7eb'};
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+
+  ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  li {
+    margin: 4px 0;
+  }
+
+  a {
+    color: ${p => p.$isUser ? '#dbeafe' : '#3b82f6'};
+    text-decoration: underline;
+  }
+`
+
+const MessageTime = styled.span`
+  display: block;
+  margin-top: 6px;
+  font-size: 11px;
+  opacity: 0.7;
+  text-align: right;
+`
+
+const TypingIndicator = styled.div`
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  color: #6b7280;
+  font-size: 13px;
+  margin: 10px 0;
+`
+
+const TypingDot = styled.div<{ $delay: number }>`
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #6b7280;
+  animation: ${dotBounce} 1.1s infinite;
+  animation-delay: ${p => p.$delay}ms;
+`
+
+const SuggestionsContainer = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 0 0;
+`
+
+const SuggestionBtn = styled.button`
+  border: 1px solid #e5e7eb;
+  background: white;
+  color: #1f2937;
+  padding: 8px 10px;
+  font-size: 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  &:hover {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+  }
+`
+
+const InputContainer = styled.div`
+  display: flex;
+  gap: 10px;
+  padding: 12px 14px;
+  border-top: 1px solid #e5e7eb;
+  background: white;
+`
+
+const ChatInput = styled.input`
+  flex: 1;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 14px;
+  color: #1f2937;
+
+  &:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+  }
+`
+
+const SendButton = styled.button`
+  border: none;
+  background: #3b82f6;
+  color: white;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
+  }
+`
+
+const ResetButton = styled.button`
+  border: 1px solid #e5e7eb;
+  background: white;
+  color: #1f2937;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+`
 
 const ChatManager: React.FC<ChatManagerProps> = ({ apiBaseUrl = '' }) => {
   const [chatHistory, setChatHistory] = useState<Message[]>([]);
@@ -108,8 +335,6 @@ const ChatManager: React.FC<ChatManagerProps> = ({ apiBaseUrl = '' }) => {
       setUserInput('');
     }
     setTypingIndicator(true);
-    // Aqui você implementaria a lógica de agendamento e API
-    // Por simplicidade, vou simular uma resposta
     setTimeout(() => {
       addMessage("Resposta simulada do bot.", false);
       setTypingIndicator(false);
@@ -150,46 +375,47 @@ const ChatManager: React.FC<ChatManagerProps> = ({ apiBaseUrl = '' }) => {
   };
 
   return (
-    <section className="container" id="chat-container">
-      <div className="chat-app-container">
-        <header className="chat-app-header">
-          <img src="Agente Virtual.png" className="chat-avatar" alt="Agente Virtual Nexa" />
-          <div className="chat-header-content">
-            <h1>Gustavinho</h1>
-            <p className="chat-subtitle">Seu Agente Virtual da Edge Machine</p>
-          </div>
-        </header>
+    <ChatSection>
+      <AppContainer>
+        <ChatHeader>
+          <ChatAvatar src="Agente Virtual.png" alt="Agente Virtual Nexa" />
+          <HeaderContent>
+            <HeaderTitle>Gustavinho</HeaderTitle>
+            <HeaderSubtitle>Seu Agente Virtual da Edge Machine</HeaderSubtitle>
+          </HeaderContent>
+        </ChatHeader>
 
-        <main className="chat-messages" id="chat-messages" ref={chatContainerRef}>
+        <MessagesContainer ref={chatContainerRef}>
           {chatHistory.map((msg, index) => (
-            <div key={index} className={`message ${msg.isUser ? 'user-message' : 'bot-message'}`}>
-              <div className="message-content" dangerouslySetInnerHTML={{ __html: formatMessageText(msg.text) }} />
-              <span className="message-time">{formatTime(msg.timestamp)}</span>
-            </div>
+            <MessageBubble key={index} $isUser={msg.isUser}>
+              <BubbleContent $isUser={msg.isUser}>
+                <div dangerouslySetInnerHTML={{ __html: formatMessageText(msg.text) }} />
+                <MessageTime>{formatTime(msg.timestamp)}</MessageTime>
+              </BubbleContent>
+            </MessageBubble>
           ))}
           {typingIndicator && (
-            <div className="typing-indicator">
+            <TypingIndicator>
               <span>Gustavinho está digitando</span>
-              <div className="typing-dot"></div>
-              <div className="typing-dot"></div>
-              <div className="typing-dot"></div>
-            </div>
+              <TypingDot $delay={0} />
+              <TypingDot $delay={120} />
+              <TypingDot $delay={240} />
+            </TypingIndicator>
           )}
           {suggestions.length > 0 && (
-            <div className="suggestion-buttons">
+            <SuggestionsContainer>
               {suggestions.map((suggestion, index) => (
-                <button key={index} className="suggestion-button" onClick={() => handleSendMessage(suggestion, true)}>
+                <SuggestionBtn key={index} onClick={() => handleSendMessage(suggestion, true)}>
                   {suggestion}
-                </button>
+                </SuggestionBtn>
               ))}
-            </div>
+            </SuggestionsContainer>
           )}
-        </main>
+        </MessagesContainer>
 
-        <div className="chat-input-container">
-          <input
+        <InputContainer>
+          <ChatInput
             type="text"
-            id="user-input"
             placeholder="Digite sua mensagem..."
             aria-label="Digite sua mensagem"
             value={userInput}
@@ -197,13 +423,11 @@ const ChatManager: React.FC<ChatManagerProps> = ({ apiBaseUrl = '' }) => {
             onKeyPress={handleKeyPress}
             ref={inputRef}
           />
-          <button id="send-button" onClick={() => handleSendMessage()}>Enviar</button>
-          <button id="reset-button" onClick={resetChat}>
-            <i className="fas fa-sync-alt"></i> Nova Conversa
-          </button>
-        </div>
-      </div>
-    </section>
+          <SendButton onClick={() => handleSendMessage()}>Enviar</SendButton>
+          <ResetButton onClick={resetChat}>Nova Conversa</ResetButton>
+        </InputContainer>
+      </AppContainer>
+    </ChatSection>
   );
 };
 

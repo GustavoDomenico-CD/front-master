@@ -156,6 +156,31 @@ const SuccessMsg = styled.div`
   border-radius: 8px;
 `
 
+const TopBar = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+`
+
+const CountLabel = styled.span`
+  font-size: 14px;
+  color: #6b7280;
+`
+
+const FormWrapper = styled.div`
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 20px;
+  margin-bottom: 20px;
+  background: #f9fafb;
+`
+
+const SmallButton = styled(Button)`
+  padding: 6px 14px;
+  font-size: 13px;
+`
+
 export default function WhatsAppConfigPanel() {
   const { configs, loading, error, load, create, remove } = useWhatsAppConfig()
   const { status: connStatus, load: loadStatus } = useWhatsAppStatus()
@@ -199,15 +224,15 @@ export default function WhatsAppConfigPanel() {
       {error && <ErrorMsg>{error}</ErrorMsg>}
       {success && <SuccessMsg>{success}</SuccessMsg>}
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <span style={{ fontSize: 14, color: '#6b7280' }}>{configs.length} configuracao(oes)</span>
+      <TopBar>
+        <CountLabel>{configs.length} configuracao(oes)</CountLabel>
         <Button onClick={() => setShowForm(!showForm)} $variant={showForm ? 'secondary' : 'primary'}>
           {showForm ? 'Cancelar' : 'Nova Configuracao'}
         </Button>
-      </div>
+      </TopBar>
 
       {showForm && (
-        <div style={{ border: '1px solid #e5e7eb', borderRadius: 10, padding: 20, marginBottom: 20, background: '#f9fafb' }}>
+        <FormWrapper>
           <FormGrid>
             <Field>
               <Label>Nome da Instancia</Label>
@@ -229,7 +254,7 @@ export default function WhatsAppConfigPanel() {
           <Button onClick={handleCreate} disabled={loading || !form.instanceName || !form.phoneNumber || !form.apiKey}>
             {loading ? 'Salvando...' : 'Salvar Configuracao'}
           </Button>
-        </div>
+        </FormWrapper>
       )}
 
       {configs.map(c => (
@@ -239,9 +264,9 @@ export default function WhatsAppConfigPanel() {
             <ConfigDetail>{c.phoneNumber} - Status: {c.status} {c.isActive ? '' : '(Inativo)'}</ConfigDetail>
           </ConfigInfo>
           <Actions>
-            <Button $variant="danger" onClick={() => handleDelete(c.id)} style={{ padding: '6px 14px', fontSize: 13 }}>
+            <SmallButton $variant="danger" onClick={() => handleDelete(c.id)}>
               Remover
-            </Button>
+            </SmallButton>
           </Actions>
         </ConfigCard>
       ))}
