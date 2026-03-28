@@ -17,7 +17,25 @@ import Pagination from '@/app/shared/Pagination';
 import { usePagination } from '@/app/hooks/usePagination';
 import GraficosDashboard from '@/app/shared/GraphsDashboard';
 import EditarAgendamentoModal from '@/app/shared/AppoimentsEditModal';
-import { deleteAppointment, postLogout } from '@/app/lib/backend';
+import { postLogout } from '@/app/lib/backend';
+import DashboardTabs from '@/app/shared/DashboardTabs';
+import type { TabItem } from '@/app/shared/DashboardTabs';
+import WhatsAppConfigPanel from '@/app/shared/WhatsAppConfigPanel';
+import WhatsAppMessagesPanel from '@/app/shared/WhatsAppMessagesPanel';
+import WhatsAppContactsPanel from '@/app/shared/WhatsAppContactsPanel';
+import WhatsAppTemplatesPanel from '@/app/shared/WhatsAppTemplatesPanel';
+import WhatsAppKPIsPanel from '@/app/shared/WhatsAppKPIsPanel';
+
+const TABS: TabItem[] = [
+  { id: 'agendamentos', label: 'Agendamentos' },
+  { id: 'kpis', label: 'KPIs & Graficos' },
+  { id: 'integracoes', label: 'Integracoes' },
+  { id: 'chatbot', label: 'Chatbot' },
+  { id: 'whatsapp-mensagens', label: 'WhatsApp Mensagens', adminOnly: true },
+  { id: 'whatsapp-contatos', label: 'WhatsApp Contatos', adminOnly: true },
+  { id: 'whatsapp-templates', label: 'WhatsApp Templates', adminOnly: true },
+  { id: 'whatsapp-config', label: 'WhatsApp Config', adminOnly: true },
+];
 
 export default function AppoimentsPanel() {
   const router = useRouter();
@@ -25,13 +43,14 @@ export default function AppoimentsPanel() {
   const { appoiments, loading, error, fetchAgendamentos, chartsData } = useAppoiments();
   const { kpis, loading: kpisLoading } = useKPIs();
 
+  const [activeTab, setActiveTab] = useState('agendamentos');
   const [filtros, setFiltros] = useState<Partial<Filters>>({});
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [agendamentoEdit, setAgendamentoEdit] = useState<Appointment | null>(null);
 
   const { pagination, goToPage } = usePagination({ pageSize: 15 });
-  const displayName = (user?.username || '').split('@')[0] || 'usuário';
+  const displayName = (user?.username || '').split('@')[0] || 'usuario';
 
   useEffect(() => {
     checkSession().catch(() => router.push('/painel-login'));
@@ -60,14 +79,14 @@ export default function AppoimentsPanel() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Confirmar exclusão deste agendamento?')) return;
+    if (!confirm('Confirmar exclusao deste agendamento?')) return;
     try {
       const res = await fetch(`/api/admin/${id}/delete`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Erro ao excluir');
-      setStatusMessage({ type: 'success', message: 'Agendamento excluído com sucesso.' });
+      setStatusMessage({ type: 'success', message: 'Agendamento excluido com sucesso.' });
       fetchAgendamentos(pagination.currentPage, filtros);
     } catch {
-      setStatusMessage({ type: 'error', message: 'Não foi possível excluir o agendamento.' });
+      setStatusMessage({ type: 'error', message: 'Nao foi possivel excluir o agendamento.' });
     }
   };
 
@@ -82,13 +101,49 @@ export default function AppoimentsPanel() {
   if (sessionLoading) return <LoadingSpinner fullScreen />;
 
   return (
-    <div className="painel-container">
-      <header>
-        <h1>Olá, {displayName}</h1>
-        <button type="button" onClick={() => router.push('/chatbot')}>
-          Chatbot
+    <div style={{ maxWidth: 1280, margin: '0 auto', padding: '24px 16px' }}>
+      <header style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 20,
+        paddingBottom: 16,
+        borderBottom: '1px solid #e5e7eb',
+      }}>
+        <div>
+          <h1 style={{ margin: 0, fontSize: 22, color: '#1f2937' }}>
+            Ola, {displayName}
+          </h1>
+          {user?.role && (
+            <span style={{
+              display: 'inline-flex',
+              padding: '2px 8px',
+              borderRadius: 999,
+              fontSize: 11,
+              fontWeight: 700,
+              background: user.role === 'admin' ? '#dbeafe' : '#f3f4f6',
+              color: user.role === 'admin' ? '#1d4ed8' : '#6b7280',
+              marginTop: 4,
+            }}>
+              {user.role.toUpperCase()}
+            </span>
+          )}
+        </div>
+        <button
+          onClick={handleLogout}
+          style={{
+            padding: '8px 16px',
+            background: '#f3f4f6',
+            border: 'none',
+            borderRadius: 8,
+            fontSize: 14,
+            fontWeight: 600,
+            color: '#374151',
+            cursor: 'pointer',
+          }}
+        >
+          Sair
         </button>
-        <button onClick={handleLogout}>Sair</button>
       </header>
 
       {statusMessage && (
@@ -99,65 +154,131 @@ export default function AppoimentsPanel() {
         />
       )}
 
-      <IntegrationsStatus />
-      
+      <DashboardTabs
+        tabs={TABS}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        userRole={user?.role}
+      />
 
-      <KPICards kpis={kpis} loading={kpisLoading} />
+      {/* ─── Aba: Agendamentos ─── */}
+      {activeTab === 'agendamentos' && (
+        <>
+          <section style={{ marginBottom: 20 }}>
+            <AppoimentsFilters onApply={handleApplyFilters} />
+          </section>
 
-      <section className="filtros-section">
-        <AppoimentsFilters onApply={handleApplyFilters} />
-      </section>
+          <section>
+            {loading && <LoadingSpinner />}
 
-      <section className="table-section">
-        {loading && <LoadingSpinner />}
+            <AppoimentsTable
+              agendamentos={appoiments}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+            />
 
-        <AppoimentsTable
-          agendamentos={appoiments}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-        />
+            <Pagination
+              currentPage={pagination.currentPage}
+              totalPages={pagination.totalPages}
+              onPageChange={goToPage}
+            />
+          </section>
 
-        <Pagination
-          currentPage={pagination.currentPage}
-          totalPages={pagination.totalPages}
-          onPageChange={goToPage}
-        />
-      </section>
+          {modalOpen && agendamentoEdit && (
+            <EditarAgendamentoModal
+              agendamento={agendamentoEdit}
+              onClose={() => {
+                setModalOpen(false);
+                setAgendamentoEdit(null);
+              }}
+              onSuccess={() => {
+                setModalOpen(false);
+                setAgendamentoEdit(null);
+                setStatusMessage({ type: 'success', message: 'Agendamento atualizado com sucesso.' });
+                fetchAgendamentos(pagination.currentPage, filtros);
+              }}
+            />
+          )}
+        </>
+      )}
 
-      <section style={{ marginTop: 16 }}>
-        <span
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            borderRadius: 999,
-            background: '#eef2ff',
-            color: '#3730a3',
-            padding: '4px 10px',
-            fontSize: 12,
-            fontWeight: 700,
-            letterSpacing: '0.3px',
-            marginBottom: 8,
-          }}
-        >
-          ChartJS
-        </span>
-        <GraficosDashboard chartsData={chartsData} />
-      </section>
+      {/* ─── Aba: KPIs & Graficos ─── */}
+      {activeTab === 'kpis' && (
+        <>
+          <KPICards kpis={kpis} loading={kpisLoading} />
+          <section style={{ marginTop: 20 }}>
+            <span style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              borderRadius: 999,
+              background: '#eef2ff',
+              color: '#3730a3',
+              padding: '4px 10px',
+              fontSize: 12,
+              fontWeight: 700,
+              letterSpacing: '0.3px',
+              marginBottom: 8,
+            }}>
+              ChartJS
+            </span>
+            <GraficosDashboard chartsData={chartsData} />
+          </section>
+        </>
+      )}
 
-      {modalOpen && agendamentoEdit && (
-        <EditarAgendamentoModal
-          agendamento={agendamentoEdit}
-          onClose={() => {
-            setModalOpen(false);
-            setAgendamentoEdit(null);
-          }}
-          onSuccess={() => {
-            setModalOpen(false);
-            setAgendamentoEdit(null);
-            setStatusMessage({ type: 'success', message: 'Agendamento atualizado com sucesso.' });
-            fetchAgendamentos(pagination.currentPage, filtros);
-          }}
-        />
+      {/* ─── Aba: Integracoes ─── */}
+      {activeTab === 'integracoes' && (
+        <IntegrationsStatus />
+      )}
+
+      {/* ─── Aba: Chatbot ─── */}
+      {activeTab === 'chatbot' && (
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          padding: 20,
+        }}>
+          <button
+            onClick={() => router.push('/chatbot')}
+            style={{
+              padding: '16px 32px',
+              background: '#3b82f6',
+              color: 'white',
+              border: 'none',
+              borderRadius: 12,
+              fontSize: 16,
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            Abrir Chatbot
+          </button>
+        </div>
+      )}
+
+      {/* ─── Aba: WhatsApp Mensagens (Admin) ─── */}
+      {activeTab === 'whatsapp-mensagens' && user?.role === 'admin' && (
+        <>
+          <WhatsAppKPIsPanel />
+          <div style={{ marginTop: 20 }}>
+            <WhatsAppMessagesPanel />
+          </div>
+        </>
+      )}
+
+      {/* ─── Aba: WhatsApp Contatos (Admin) ─── */}
+      {activeTab === 'whatsapp-contatos' && user?.role === 'admin' && (
+        <WhatsAppContactsPanel />
+      )}
+
+      {/* ─── Aba: WhatsApp Templates (Admin) ─── */}
+      {activeTab === 'whatsapp-templates' && user?.role === 'admin' && (
+        <WhatsAppTemplatesPanel />
+      )}
+
+      {/* ─── Aba: WhatsApp Config (Admin) ─── */}
+      {activeTab === 'whatsapp-config' && user?.role === 'admin' && (
+        <WhatsAppConfigPanel />
       )}
     </div>
   );
