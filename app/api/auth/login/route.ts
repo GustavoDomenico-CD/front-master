@@ -10,17 +10,22 @@ export async function POST(request: Request) {
       email?: string
       password?: string
     }
-    const email = body.email ?? body.username
-    if (!email?.trim() || !body.password) {
+    const identifier = (body.email ?? body.username ?? '').trim()
+    if (!identifier || !body.password) {
       return NextResponse.json(
-        { success: false, message: 'E-mail e senha são obrigatórios.' },
+        { success: false, message: 'E-mail/usuário e senha são obrigatórios.' },
         { status: 400 }
       )
     }
 
+    const isEmail = identifier.includes('@')
+    const loginPayload = isEmail
+      ? { email: identifier, password: body.password }
+      : { username: identifier, password: body.password }
+
     const res = await backendFetch('/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ email: email.trim(), password: body.password }),
+      body: JSON.stringify(loginPayload),
     })
 
     const data = (await res.json().catch(() => ({}))) as {
@@ -47,8 +52,8 @@ export async function POST(request: Request) {
     const out = NextResponse.json({
       success: true,
       user: {
-        name: u?.name?.trim() || email.split('@')[0] || email,
-        email: u?.email ?? email,
+        name: u?.name?.trim() || (isEmail ? identifier.split('@')[0] : identifier),
+        email: u?.email ?? identifier,
       },
     })
 

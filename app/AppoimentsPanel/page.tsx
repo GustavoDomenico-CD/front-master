@@ -191,7 +191,7 @@ export default function AppoimentsPanel() {
             Ola, {displayName}
           </PageTitle>
           {user?.role && (
-            <RoleBadge $isAdmin={user.role === 'admin'}>
+            <RoleBadge $isAdmin={user.role === 'admin' || user.role === 'superadmin'}>
               {user.role.toUpperCase()}
             </RoleBadge>
           )}
@@ -280,7 +280,7 @@ export default function AppoimentsPanel() {
         </ChatbotContainer>
       )}
 
-      {activeTab === 'whatsapp-mensagens' && user?.role === 'admin' && (
+      {activeTab === 'whatsapp-mensagens' && (user?.role === 'admin' || user?.role === 'superadmin') && (
         <>
           <WhatsAppKPIsPanel />
           <WhatsAppSection>
@@ -289,15 +289,15 @@ export default function AppoimentsPanel() {
         </>
       )}
 
-      {activeTab === 'whatsapp-contatos' && user?.role === 'admin' && (
+      {activeTab === 'whatsapp-contatos' && (user?.role === 'admin' || user?.role === 'superadmin') && (
         <WhatsAppContactsPanel />
       )}
 
-      {activeTab === 'whatsapp-templates' && user?.role === 'admin' && (
+      {activeTab === 'whatsapp-templates' && (user?.role === 'admin' || user?.role === 'superadmin') && (
         <WhatsAppTemplatesPanel />
       )}
 
-      {activeTab === 'whatsapp-config' && user?.role === 'admin' && (
+      {activeTab === 'whatsapp-config' && (user?.role === 'admin' || user?.role === 'superadmin') && (
         <WhatsAppConfigPanel />
       )}
     </PageWrapper>
