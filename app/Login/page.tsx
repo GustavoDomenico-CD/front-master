@@ -211,9 +211,9 @@ export default function LoginPage() {
             $isSignUp={false}            
           >
             <Title>Entrar</Title>
-            <Text>Use seu e-mail e senha</Text>
+            <Text>Use seu e-mail/usuário e senha</Text>
             <InputWrapper>
-              <input type="email" name="email" placeholder="E-mail" value={formData.email} onChange={handleChange} required />
+              <input type="text" name="email" placeholder="E-mail ou Usuário" value={formData.email} onChange={handleChange} required />
             </InputWrapper>
             <InputWrapper>
               <input type="password" name="password" placeholder="Senha" value={formData.password} onChange={handleChange} required />

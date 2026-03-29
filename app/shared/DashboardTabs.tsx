@@ -63,7 +63,7 @@ const AdminBadge = styled.span`
 
 export default function DashboardTabs({ tabs, activeTab, onTabChange, userRole }: DashboardTabsProps) {
   const visibleTabs = tabs.filter(t => {
-    if (t.adminOnly && userRole !== 'admin') return false
+    if (t.adminOnly && userRole !== 'admin' && userRole !== 'superadmin') return false
     return true
   })
 
