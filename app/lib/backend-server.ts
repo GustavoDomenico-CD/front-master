@@ -49,6 +49,11 @@ export async function backendFetch(
   }
   if (forwardCookies) {
     headers.set('Cookie', forwardCookies)
+    // Extract access_token from cookies and forward as Bearer token
+    const tokenMatch = forwardCookies.match(/(?:^|;\s*)access_token=([^;]+)/)
+    if (tokenMatch && !headers.has('Authorization')) {
+      headers.set('Authorization', `Bearer ${decodeURIComponent(tokenMatch[1])}`)
+    }
   }
 
   try {
