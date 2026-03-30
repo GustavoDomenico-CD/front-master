@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+'use client'
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import styled, { keyframes } from 'styled-components';
 
 interface Message {
@@ -245,16 +246,26 @@ const ResetButton = styled.button`
 const ChatManager: React.FC<ChatManagerProps> = ({ apiBaseUrl = '' }) => {
   const [chatHistory, setChatHistory] = useState<Message[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [currentTheme, setCurrentTheme] = useState(localStorage.getItem('chatTheme') || 'light');
+  const [currentTheme, setCurrentTheme] = useState(() => {
+    if (typeof window === 'undefined') return 'light'
+    return localStorage.getItem('chatTheme') || 'light'
+  });
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [typingIndicator, setTypingIndicator] = useState(false);
-  const [sessionId, setSessionId] = useState(localStorage.getItem('chatSessionId') || null);
+  const [sessionId, setSessionId] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null
+    return localStorage.getItem('chatSessionId') || null
+  });
   const [checkoutVisible, setCheckoutVisible] = useState(false);
   const [userInput, setUserInput] = useState('');
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const apiUrl = window.location.hostname.includes('localhost') ? 'http://localhost:8080' : '';
+  const apiUrl = useMemo(() => {
+    if (apiBaseUrl.trim()) return apiBaseUrl.trim()
+    if (typeof window === 'undefined') return ''
+    return window.location.hostname.includes('localhost') ? 'http://localhost:8080' : ''
+  }, [apiBaseUrl]);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', currentTheme);

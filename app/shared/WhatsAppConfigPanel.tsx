@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import styled from 'styled-components'
 import { useWhatsAppConfig, useWhatsAppStatus } from '@/app/hooks/useWhatsApp'
+import WhatsAppConnectPanel from '@/app/shared/WhatsAppConnectPanel'
 
 const Container = styled.div`
   background: white;
@@ -213,6 +214,8 @@ export default function WhatsAppConfigPanel() {
   return (
     <Container>
       <Title>Configuracao WhatsApp</Title>
+
+      <WhatsAppConnectPanel />
 
       <StatusBar $connected={connStatus?.connected ?? false}>
         <Dot $on={connStatus?.connected ?? false} />

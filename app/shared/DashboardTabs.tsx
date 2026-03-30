@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useMemo, useRef } from 'react'
 import styled from 'styled-components'
 
 export interface TabItem {
@@ -23,6 +24,11 @@ const TabsContainer = styled.nav`
   padding: 4px;
   margin-bottom: 24px;
   overflow-x: auto;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  touch-action: pan-x;
 
   &::-webkit-scrollbar {
     height: 0;
@@ -38,6 +44,7 @@ const TabButton = styled.button<{ $active: boolean }>`
   cursor: pointer;
   white-space: nowrap;
   transition: all 0.2s ease;
+  scroll-snap-align: center;
 
   background: ${p => p.$active ? '#ffffff' : 'transparent'};
   color: ${p => p.$active ? '#1f2937' : '#6b7280'};
@@ -62,18 +69,41 @@ const AdminBadge = styled.span`
 `
 
 export default function DashboardTabs({ tabs, activeTab, onTabChange, userRole }: DashboardTabsProps) {
-  const visibleTabs = tabs.filter(t => {
-    if (t.adminOnly && userRole !== 'admin' && userRole !== 'superadmin') return false
-    return true
-  })
+  const containerRef = useRef<HTMLElement | null>(null)
+
+  const visibleTabs = useMemo(() => {
+    return tabs.filter(t => {
+      if (t.adminOnly && userRole !== 'admin' && userRole !== 'superadmin') return false
+      return true
+    })
+  }, [tabs, userRole])
+
+  useEffect(() => {
+    const container = containerRef.current
+    if (!container) return
+    const activeEl = container.querySelector<HTMLElement>(`[data-tab-id="${activeTab}"]`)
+    if (!activeEl) return
+    activeEl.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' })
+  }, [activeTab])
+
+  const handleWheel: React.WheelEventHandler<HTMLElement> = (e) => {
+    const el = containerRef.current
+    if (!el) return
+    if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return
+
+    // Turn vertical wheel into horizontal scroll for overflowed tabs.
+    e.preventDefault()
+    el.scrollBy({ left: e.deltaY, behavior: 'smooth' })
+  }
 
   return (
-    <TabsContainer>
+    <TabsContainer ref={containerRef} onWheel={handleWheel}>
       {visibleTabs.map(tab => (
         <TabButton
           key={tab.id}
           $active={activeTab === tab.id}
           onClick={() => onTabChange(tab.id)}
+          data-tab-id={tab.id}
         >
           {tab.label}
           {tab.adminOnly && <AdminBadge>Admin</AdminBadge>}

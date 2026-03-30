@@ -49,6 +49,14 @@ export async function backendFetch(
   }
   if (forwardCookies) {
     headers.set('Cookie', forwardCookies)
+    // Backend Nest uses JWT guard (Bearer). When the browser session is cookie-based
+    // in Next routes, propagate Authorization transparently.
+    if (!headers.has('Authorization')) {
+      const match = forwardCookies.match(/(?:^|;\s*)access_token=([^;]+)/)
+      if (match?.[1]) {
+        headers.set('Authorization', `Bearer ${decodeURIComponent(match[1])}`)
+      }
+    }
   }
 
   try {

@@ -73,7 +73,7 @@ margin-top: 24px;
 justify-content: flex-end;
 `;
 
-const Button = styled.button<{ variant: 'primary' | 'secondary' }>`
+const Button = styled.button<{ $variant: 'primary' | 'secondary' }>`
 padding: 10px 20px;
 border: none;
 border-radius: ${theme.radius.sm};
@@ -81,7 +81,7 @@ font-size: 14px;
 font-weight: 600;
 cursor: pointer;
 transition: all 0.2s;
-${({ variant }) => variant === 'primary' ? `
+${({ $variant }) => $variant === 'primary' ? `
   background: ${theme.colors.primary};
   color: white;
   &:hover {
@@ -269,8 +269,8 @@ const AppointmentsFilters: React.FC<FiltersAppoimentsProps> = ({
         </FormGrid>
 
         <ButtonGroup>
-            <Button type="button" variant="secondary" onClick={handleReset}>Limpar</Button>
-            <Button type="submit" variant="primary">Aplicar</Button>
+            <Button type="button" $variant="secondary" onClick={handleReset}>Limpar</Button>
+            <Button type="submit" $variant="primary">Aplicar</Button>
         </ButtonGroup>
       </form>
     </ContainerFilters>

@@ -14,6 +14,9 @@ import {
   updateWhatsAppConfig,
   deleteWhatsAppConfig,
   fetchWhatsAppStatus,
+  connectWhatsApp,
+  disconnectWhatsApp,
+  resetWhatsAppSession,
   fetchWhatsAppMessages,
   sendWhatsAppText,
   fetchWhatsAppContacts,
@@ -267,6 +270,7 @@ export function useWhatsAppStatus() {
     status: string
     phoneNumber: string | null
     instanceName: string | null
+    qr?: string | null
   } | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -284,5 +288,48 @@ export function useWhatsAppStatus() {
     }
   }, [])
 
-  return { status, loading, error, load }
+  const connect = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const data = await connectWhatsApp()
+      setStatus(data)
+      return data
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao conectar')
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  const disconnect = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      await disconnectWhatsApp()
+      await load()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao desconectar')
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }, [load])
+
+  const resetSession = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      await resetWhatsAppSession()
+      await load()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao resetar sessao')
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }, [load])
+
+  return { status, loading, error, load, connect, disconnect, resetSession }
 }

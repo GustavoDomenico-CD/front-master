@@ -58,11 +58,37 @@ export async function fetchWhatsAppStatus(): Promise<{
   status: string
   phoneNumber: string | null
   instanceName: string | null
+  qr?: string | null
 }> {
   const res = await apiRequest('/api/admin/whatsapp/status')
   const data = await res.json()
   if (!res.ok) throw new Error(data.message ?? 'Erro ao verificar status')
   return data.data
+}
+
+export async function connectWhatsApp(): Promise<{
+  connected: boolean
+  status: string
+  phoneNumber: string | null
+  instanceName: string | null
+  qr?: string | null
+}> {
+  const res = await apiRequest('/api/admin/whatsapp/connect', { method: 'POST' })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.message ?? data.mensagem ?? 'Erro ao conectar')
+  return data.data
+}
+
+export async function disconnectWhatsApp(): Promise<void> {
+  const res = await apiRequest('/api/admin/whatsapp/disconnect', { method: 'POST' })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error((data as any).message ?? (data as any).mensagem ?? 'Erro ao desconectar')
+}
+
+export async function resetWhatsAppSession(): Promise<void> {
+  const res = await apiRequest('/api/admin/whatsapp/reset-session', { method: 'POST' })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error((data as any).message ?? (data as any).mensagem ?? 'Erro ao resetar sessão')
 }
 
 // ─── Messages ───────────────────────────────────────────

@@ -26,6 +26,7 @@ import WhatsAppMessagesPanel from '@/app/shared/WhatsAppMessagesPanel';
 import WhatsAppContactsPanel from '@/app/shared/WhatsAppContactsPanel';
 import WhatsAppTemplatesPanel from '@/app/shared/WhatsAppTemplatesPanel';
 import WhatsAppKPIsPanel from '@/app/shared/WhatsAppKPIsPanel';
+import SuperadminUserCreator from '@/app/shared/SuperadminUserCreator';
 
 const PageWrapper = styled.div`
   max-width: 1280px;
@@ -118,6 +119,7 @@ const TABS: TabItem[] = [
   { id: 'whatsapp-contatos', label: 'WhatsApp Contatos', adminOnly: true },
   { id: 'whatsapp-templates', label: 'WhatsApp Templates', adminOnly: true },
   { id: 'whatsapp-config', label: 'WhatsApp Config', adminOnly: true },
+  { id: 'usuarios', label: 'Usuarios', adminOnly: true },
 ];
 
 export default function AppoimentsPanel() {
@@ -299,6 +301,10 @@ export default function AppoimentsPanel() {
 
       {activeTab === 'whatsapp-config' && (user?.role === 'admin' || user?.role === 'superadmin') && (
         <WhatsAppConfigPanel />
+      )}
+
+      {activeTab === 'usuarios' && user?.role === 'superadmin' && (
+        <SuperadminUserCreator />
       )}
     </PageWrapper>
   );
