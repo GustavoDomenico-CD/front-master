@@ -120,7 +120,7 @@ const TABS: TabItem[] = [
   { id: 'whatsapp-mensagens', label: 'WhatsApp Mensagens', adminOnly: true },
   { id: 'whatsapp-contatos', label: 'WhatsApp Contatos', adminOnly: true },
   { id: 'whatsapp-templates', label: 'WhatsApp Templates', adminOnly: true },
-  { id: 'whatsapp-config', label: 'WhatsApp Config', adminOnly: true },
+  { id: 'whatsapp-conexao', label: 'WhatsApp Conexão', adminOnly: true },
   { id: 'usuarios', label: 'Usuarios', adminOnly: true },
 ];
 
@@ -305,7 +305,7 @@ export default function AppoimentsPanel() {
         <WhatsAppTemplatesPanel />
       )}
 
-      {activeTab === 'whatsapp-config' && (user?.role === 'admin' || user?.role === 'superadmin') && (
+      {activeTab === 'whatsapp-conexao' && (user?.role === 'admin' || user?.role === 'superadmin') && (
         <WhatsAppConfigPanel />
       )}
 

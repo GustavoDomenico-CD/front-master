@@ -7,8 +7,6 @@ export interface WhatsAppConfig {
   id: number
   instanceName: string
   phoneNumber: string
-  apiKey: string
-  webhookUrl: string
   status: WhatsAppConnectionStatus
   isActive: boolean
   createdAt: string

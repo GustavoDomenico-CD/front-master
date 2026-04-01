@@ -1,6 +1,5 @@
 import { apiRequest } from './backend'
 import type {
-  WhatsAppConfig,
   WhatsAppContact,
   WhatsAppMessage,
   WhatsAppTemplate,
@@ -8,50 +7,7 @@ import type {
   PaginatedResponse,
 } from '@/app/types/whatsapp'
 
-// ─── Config ─────────────────────────────────────────────
-
-export async function fetchWhatsAppConfigs(): Promise<WhatsAppConfig[]> {
-  const res = await apiRequest('/api/admin/whatsapp/config')
-  const data = await res.json()
-  if (!res.ok) throw new Error(data.message ?? 'Erro ao carregar configuracoes')
-  return data.data
-}
-
-export async function createWhatsAppConfig(body: {
-  instanceName: string
-  phoneNumber: string
-  apiKey: string
-  webhookUrl?: string
-}): Promise<WhatsAppConfig> {
-  const res = await apiRequest('/api/admin/whatsapp/config', {
-    method: 'POST',
-    body: JSON.stringify(body),
-  })
-  const data = await res.json()
-  if (!res.ok) throw new Error(data.message ?? 'Erro ao criar configuracao')
-  return data.data
-}
-
-export async function updateWhatsAppConfig(
-  id: number,
-  body: Partial<{ instanceName: string; phoneNumber: string; apiKey: string; webhookUrl: string; isActive: boolean }>
-): Promise<WhatsAppConfig> {
-  const res = await apiRequest(`/api/admin/whatsapp/config/${id}`, {
-    method: 'PUT',
-    body: JSON.stringify(body),
-  })
-  const data = await res.json()
-  if (!res.ok) throw new Error(data.message ?? 'Erro ao atualizar configuracao')
-  return data.data
-}
-
-export async function deleteWhatsAppConfig(id: number): Promise<void> {
-  const res = await apiRequest(`/api/admin/whatsapp/config/${id}`, { method: 'DELETE' })
-  if (!res.ok) {
-    const data = await res.json().catch(() => ({}))
-    throw new Error((data as Record<string, string>).message ?? 'Erro ao remover configuracao')
-  }
-}
+// ─── Connection ─────────────────────────────────────────
 
 export async function fetchWhatsAppStatus(): Promise<{
   connected: boolean
