@@ -21,6 +21,7 @@ export interface WhatsAppContact {
   name: string
   profilePicUrl?: string
   isBlocked: boolean
+  agentEnabled: boolean
   lastMessageAt?: string
   tags: string
   createdAt: string

@@ -23,6 +23,7 @@ import {
   upsertWhatsAppContact,
   deleteWhatsAppContact,
   toggleBlockContact,
+  toggleAgentContact,
   fetchWhatsAppTemplates,
   createWhatsAppTemplate,
   updateWhatsAppTemplate,
@@ -184,7 +185,18 @@ export function useWhatsAppContacts() {
     }
   }, [])
 
-  return { contacts, total, pages, loading, error, load, upsert, remove, toggleBlock }
+  const toggleAgent = useCallback(async (id: number) => {
+    setError(null)
+    try {
+      const contact = await toggleAgentContact(id)
+      setContacts(prev => prev.map(c => c.id === id ? contact : c))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao alterar agente')
+      throw err
+    }
+  }, [])
+
+  return { contacts, total, pages, loading, error, load, upsert, remove, toggleBlock, toggleAgent }
 }
 
 export function useWhatsAppTemplates() {

@@ -26,6 +26,7 @@ import WhatsAppMessagesPanel from '@/app/shared/WhatsAppMessagesPanel';
 import WhatsAppContactsPanel from '@/app/shared/WhatsAppContactsPanel';
 import WhatsAppTemplatesPanel from '@/app/shared/WhatsAppTemplatesPanel';
 import WhatsAppKPIsPanel from '@/app/shared/WhatsAppKPIsPanel';
+import WhatsAppChatPanel from '@/app/shared/WhatsAppChatPanel';
 import SuperadminUserCreator from '@/app/shared/SuperadminUserCreator';
 
 const PageWrapper = styled.div`
@@ -115,6 +116,7 @@ const TABS: TabItem[] = [
   { id: 'kpis', label: 'KPIs & Graficos' },
   { id: 'integracoes', label: 'Integracoes' },
   { id: 'chatbot', label: 'Chatbot' },
+  { id: 'whatsapp-chat', label: 'WhatsApp Chat', adminOnly: true },
   { id: 'whatsapp-mensagens', label: 'WhatsApp Mensagens', adminOnly: true },
   { id: 'whatsapp-contatos', label: 'WhatsApp Contatos', adminOnly: true },
   { id: 'whatsapp-templates', label: 'WhatsApp Templates', adminOnly: true },
@@ -280,6 +282,10 @@ export default function AppoimentsPanel() {
             Abrir Chatbot
           </ChatbotButton>
         </ChatbotContainer>
+      )}
+
+      {activeTab === 'whatsapp-chat' && (user?.role === 'admin' || user?.role === 'superadmin') && (
+        <WhatsAppChatPanel />
       )}
 
       {activeTab === 'whatsapp-mensagens' && (user?.role === 'admin' || user?.role === 'superadmin') && (
