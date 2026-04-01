@@ -222,6 +222,7 @@ export function useWhatsAppStatus() {
     phoneNumber: string | null
     instanceName: string | null
     qr?: string | null
+    qrRaw?: string | null
   } | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)

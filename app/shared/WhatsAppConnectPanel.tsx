@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import styled from 'styled-components'
+import QRCode from 'qrcode'
 import { useWhatsAppStatus } from '@/app/hooks/useWhatsApp'
 import { useWhatsAppMessages } from '@/app/hooks/useWhatsApp'
 
@@ -168,6 +169,8 @@ export default function WhatsAppConnectPanel({ pollMs = 2500 }: { pollMs?: numbe
   const [chatPhone, setChatPhone] = useState('')
   const [chatText, setChatText] = useState('')
   const [sendingChat, setSendingChat] = useState(false)
+  /** QR gerado no browser a partir de `qrRaw` (recomendação Baileys), com fallback para `qr` do servidor. */
+  const [qrImageSrc, setQrImageSrc] = useState<string | null>(null)
 
   const connected = Boolean(status?.connected)
   const pillText = useMemo(() => {
@@ -183,6 +186,31 @@ export default function WhatsAppConnectPanel({ pollMs = 2500 }: { pollMs?: numbe
     const t = setInterval(() => load(), pollMs)
     return () => clearInterval(t)
   }, [load, pollMs])
+
+  useEffect(() => {
+    const raw = status?.qrRaw?.trim()
+    if (!raw) {
+      setQrImageSrc(status?.qr ?? null)
+      return
+    }
+    let cancelled = false
+    QRCode.toDataURL(raw, {
+      type: 'image/png',
+      errorCorrectionLevel: 'L',
+      margin: 2,
+      width: 512,
+      color: { dark: '#000000', light: '#ffffff' },
+    })
+      .then((url) => {
+        if (!cancelled) setQrImageSrc(url)
+      })
+      .catch(() => {
+        if (!cancelled) setQrImageSrc(status?.qr ?? null)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [status?.qrRaw, status?.qr])
 
   const handleConnect = async () => {
     setBusy(true)
@@ -262,9 +290,9 @@ export default function WhatsAppConnectPanel({ pollMs = 2500 }: { pollMs?: numbe
         </Button>
       </Actions>
 
-      {!connected && status?.qr && (
+      {!connected && qrImageSrc && (
         <QRBox>
-          <QRImage src={status.qr} alt="QR Code WhatsApp" />
+          <QRImage src={qrImageSrc} alt="QR Code WhatsApp" />
           <Help>
             Abra o WhatsApp no celular → <b>Aparelhos conectados</b> → <b>Conectar um aparelho</b> e escaneie o QR.
             Se o QR expirar, clique em <b>Atualizar QR</b>.

@@ -15,6 +15,8 @@ export async function fetchWhatsAppStatus(): Promise<{
   phoneNumber: string | null
   instanceName: string | null
   qr?: string | null
+  /** Payload bruto do Baileys — preferir gerar o QR no cliente a partir disto. */
+  qrRaw?: string | null
 }> {
   const res = await apiRequest('/api/admin/whatsapp/status')
   const data = await res.json()
@@ -28,6 +30,7 @@ export async function connectWhatsApp(): Promise<{
   phoneNumber: string | null
   instanceName: string | null
   qr?: string | null
+  qrRaw?: string | null
 }> {
   const res = await apiRequest('/api/admin/whatsapp/connect', { method: 'POST' })
   const data = await res.json()
