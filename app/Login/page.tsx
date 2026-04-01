@@ -167,7 +167,7 @@ export default function LoginPage() {
 
     try {
       const endpoint = isRegister ? '/api/auth/register' : '/api/auth/login';
-      const payload = isRegister ? {
+      const requestBody = isRegister ? {
         email: formData.email.trim(),
         password: formData.password,
         name: formData.name.trim() || undefined,
@@ -181,7 +181,7 @@ export default function LoginPage() {
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(requestBody),
         credentials: 'include',
       });
 
@@ -191,10 +191,10 @@ export default function LoginPage() {
         throw new Error(data.message || (isRegister ? 'Falha ao criar conta' : 'Credenciais inválidas'));
       }
 
-      const payload = data as typeof data & {
+      const authData = data as typeof data & {
         user?: { role?: string };
       };
-      const r = (payload.user?.role ?? '').toLowerCase();
+      const r = (authData.user?.role ?? '').toLowerCase();
       router.push(r === 'paciente' ? '/paciente' : '/painel-agendamento');
       router.refresh();
     } catch (err: unknown) {
