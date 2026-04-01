@@ -2,7 +2,8 @@
  * Proxy para o backend (NestJS etc.). Usar apenas em Route Handlers / Server Components.
  *
  * Preferir BACKEND_URL (só no servidor). NEXT_PUBLIC_* só se precisar expor ao browser.
- * Repositório irmão típico: ../backend-edge — rode o Nest com PORT=3001 para não conflitar com o Next (3000).
+ * Backend oficial do sistema: https://github.com/GustavoDomenico-CD/backend-edge-main
+ * (Nest: PORT=3001 por padrão para não conflitar com o Next na 3000.)
  */
 
 export function getBackendUrl(): string {

@@ -191,7 +191,11 @@ export default function LoginPage() {
         throw new Error(data.message || (isRegister ? 'Falha ao criar conta' : 'Credenciais inválidas'));
       }
 
-      router.push('/painel-agendamento');
+      const payload = data as typeof data & {
+        user?: { role?: string };
+      };
+      const r = (payload.user?.role ?? '').toLowerCase();
+      router.push(r === 'paciente' ? '/paciente' : '/painel-agendamento');
       router.refresh();
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : `Erro ao tentar ${isRegister ? 'criar conta' : 'fazer login'}. Tente novamente`;

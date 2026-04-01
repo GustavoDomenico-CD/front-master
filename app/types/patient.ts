@@ -19,10 +19,11 @@ export interface Appointment {
 export interface PatientDashboardData {
   id: string;
   name: string;
-  age: number;
+  /** Quando não há data de nascimento no cadastro, exibir como “não informada”. */
+  age: number | null;
   phone: string;
   email: string;
-  status: "Active" | "Inactive";
+  status: "Ativo" | "Inativo";
   scheduledAppointments: number;
   completedAppointments: number;
   canceledAppointments: number;

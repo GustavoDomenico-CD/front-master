@@ -30,7 +30,7 @@ export async function POST(request: Request) {
 
     const data = (await res.json().catch(() => ({}))) as {
       access_token?: string
-      user?: { id?: number; email?: string; name?: string | null }
+      user?: { id?: number; email?: string; name?: string | null; role?: string; phone?: string | null }
       message?: string | string[]
     }
 
@@ -54,6 +54,8 @@ export async function POST(request: Request) {
       user: {
         name: u?.name?.trim() || (isEmail ? identifier.split('@')[0] : identifier),
         email: u?.email ?? identifier,
+        role: u?.role ?? 'user',
+        phone: u?.phone ?? null,
       },
     })
 

@@ -1,14 +1,27 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-## API local (`backend-edge`)
+## Sistema: front + [backend-edge-main](https://github.com/GustavoDomenico-CD/backend-edge-main)
 
-O painel chama rotas `/api/*` no Next; estas fazem proxy para o backend Nest no repositório irmão:
+Este repositório é o painel Next.js. O backend é o NestJS do link acima; juntos formam um único sistema.
 
-- Clone/pasta: `../backend-edge` (mesmo nível que `front` sob `GitHub/`).
-- Backend: copie `../backend-edge/.env.example` para `.env`, rode `npx prisma migrate dev` se necessário, depois `PORT=3001 npm run start:dev`.
-- Front: copie `env.local.example` para `.env.local` e ajuste `BACKEND_URL` se a API não estiver em `http://127.0.0.1:3001`.
+### Backend (Nest)
 
-**Nota:** As rotas esperadas pelo front (`/admin/agendamento/*`, sessão por cookie, etc.) precisam existir no backend que você apontar. O `backend-edge` atual expõe principalmente `auth/login` e `POST /auth/register`; alinhar contratos é o próximo passo se ainda não estiver implementado.
+1. Clone [backend-edge-main](https://github.com/GustavoDomenico-CD/backend-edge-main).
+2. Copie `.env.example` para `.env`, ajuste `DATABASE_URL` / `JWT_SECRET` se precisar.
+3. Defina `FRONTEND_URL=http://localhost:3000` no `.env` do backend para CORS com cookies em desenvolvimento.
+4. `npx prisma migrate dev` (se necessário), depois `npm run start:dev` (porta padrão **3001**).
+
+### Front (este repo)
+
+1. Copie `.env.local.example` para `.env.local`.
+2. Confirme `BACKEND_URL=http://127.0.0.1:3001` (ou a URL do deploy da API).
+3. `npm install` e `npm run dev` → [http://localhost:3000](http://localhost:3000).
+
+As rotas `/api/*` daqui fazem **proxy** para o Nest (`auth`, `users`, `admin/agendamento/*`, `admin/whatsapp/*`, etc.). O chat da página do bot usa `POST /api/admin/chatbot/search`, que repassa para `POST /admin/agendamento/chatbot/search` no backend.
+
+**Área do paciente:** após login com usuário `role = paciente` no backend, o front envia para [`/paciente`](http://localhost:3000/paciente), que mostra apenas dados do próprio paciente (agendamentos filtrados pelo e-mail da conta). A rota antiga `/Patients` redireciona para `/paciente`.
+
+**WhatsApp (QR com Baileys):** a biblioteca **`@whiskeysockets/baileys`**, geração de QR (`qrcode`) e sessão em `.wa_sessions` ficam no **Nest** (`src/modules/whatsapp/whatsapp.service.ts`). No painel, use a aba **WhatsApp Conexão** (usuário admin) para escanear o QR; o front apenas consome `/admin/whatsapp/connect` e `/admin/whatsapp/status` via proxy.
 
 ## Getting Started
 
@@ -28,7 +41,7 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family from Vercel.
 
 ## Learn More
 
@@ -44,3 +57,5 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+Em produção, configure `BACKEND_URL` no ambiente do Next com a URL HTTPS da API e no backend `FRONTEND_URL` com a origem exata do site (CORS).

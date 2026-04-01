@@ -663,13 +663,68 @@ export default function ChatManager({ apiBaseUrl = '', userId, principal }: Chat
       setUserInput('')
     }
     setTypingIndicator(true)
-    // Aqui você implementaria a lógica de agendamento e API
-    // Por simplicidade, vou simular uma resposta
-    setTimeout(() => {
-      addMessage('Resposta simulada do bot.', false)
+    try {
+      const res = await fetch('/api/admin/chatbot/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ query: message, source: 'both' }),
+      })
+      const json = (await res.json().catch(() => ({}))) as {
+        status?: string
+        data?: {
+          db?: Array<{
+            id: number
+            email: string
+            name: string | null
+            phone: string | null
+            role: string
+            isActive: boolean
+          }>
+          api?: Array<{
+            method: string
+            path: string
+            description: string
+            tags: string[]
+          }>
+        }
+        mensagem?: string
+      }
+
+      if (!res.ok || json.status !== 'sucesso') {
+        addMessage(json.mensagem ?? 'Não foi possível processar sua mensagem.', false)
+        return
+      }
+
+      const parts: string[] = []
+      const d = json.data
+      if (d?.db && d.db.length > 0) {
+        parts.push('**Usuários encontrados:**')
+        for (const u of d.db.slice(0, 8)) {
+          parts.push(
+            `- ${u.name ?? '(sem nome)'} (${u.email}) — ${u.role}${u.isActive ? '' : ' [inativo]'}`,
+          )
+        }
+        if (d.db.length > 8) parts.push(`… e mais ${d.db.length - 8} registro(s).`)
+      }
+      if (d?.api && d.api.length > 0) {
+        parts.push('**Endpoints relacionados:**')
+        for (const a of d.api.slice(0, 10)) {
+          parts.push(`- **${a.method} ${a.path}**: ${a.description}`)
+        }
+      }
+      if (parts.length === 0) {
+        parts.push(
+          'Não encontrei resultados para essa busca. Posso ajudar com **agendamento** ou **cadastro de paciente** pelas opções abaixo.',
+        )
+      }
+      addMessage(parts.join('\n'), false)
+    } catch {
+      addMessage('Erro de conexão. Confirme se o backend Nest está rodando (veja README).', false)
+    } finally {
       setTypingIndicator(false)
       setIsProcessing(false)
-    }, 1000)
+    }
   }
 
   const handleKeyPress = (e: React.KeyboardEvent) => {

@@ -47,7 +47,7 @@ const InfoText = styled.span`
   color: ${theme.colors.gray};
 `;
 
-const StatusBadge = styled.span<{ $status: "Active" | "Inactive" }>`
+const StatusBadge = styled.span<{ $status: "Ativo" | "Inativo" }>`
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -55,8 +55,8 @@ const StatusBadge = styled.span<{ $status: "Active" | "Inactive" }>`
   border-radius: 999px;
   font-size: 13px;
   font-weight: 600;
-  background: ${({ $status }) => ($status === "Active" ? "#dcfce7" : "#fee2e2")};
-  color: ${({ $status }) => ($status === "Active" ? "#166534" : "#991b1b")};
+  background: ${({ $status }) => ($status === "Ativo" ? "#dcfce7" : "#fee2e2")};
+  color: ${({ $status }) => ($status === "Ativo" ? "#166534" : "#991b1b")};
 `;
 
 export default function PatientHeader({ patient }: PatientHeaderProps) {
@@ -66,9 +66,12 @@ export default function PatientHeader({ patient }: PatientHeaderProps) {
         <PatientInfo>
           <PatientName>{patient.name}</PatientName>
           <InfoRow>
-            <InfoText>Age: {patient.age} years</InfoText>
-            <InfoText>Phone: {patient.phone}</InfoText>
-            <InfoText>Email: {patient.email}</InfoText>
+            <InfoText>
+              Idade:{' '}
+              {patient.age != null && patient.age > 0 ? `${patient.age} anos` : 'não informada'}
+            </InfoText>
+            <InfoText>Telefone: {patient.phone}</InfoText>
+            <InfoText>E-mail: {patient.email}</InfoText>
           </InfoRow>
         </PatientInfo>
 

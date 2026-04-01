@@ -219,10 +219,10 @@ const ObsItem = styled.li`
 // Tab configuration
 
 const TAB_CONFIG: Record<TabKey, { accent: string; badgeLabel: string }> = {
-  scheduled:   { accent: theme.colors.primary, badgeLabel: "Scheduled"  },
-  completed:   { accent: theme.colors.success,  badgeLabel: "Completed" },
-  canceled:    { accent: theme.colors.danger,   badgeLabel: "Canceled" },
-  medicalRecord: { accent: "#a855f7", badgeLabel: "" },
+  scheduled: { accent: theme.colors.primary, badgeLabel: 'Agendado' },
+  completed: { accent: theme.colors.success, badgeLabel: 'Concluído' },
+  canceled: { accent: theme.colors.danger, badgeLabel: 'Cancelado' },
+  medicalRecord: { accent: '#a855f7', badgeLabel: '' },
 };
 
 // Sub-components
@@ -254,7 +254,9 @@ function AppointmentsList({
         <ListItem key={appointment.id} $accentColor={accentColor}>
           <ListItemTop>
             <ListItemInfo>
-              <AppointmentDate>📅 {formatDate(appointment.date)} at {appointment.time}</AppointmentDate>
+              <AppointmentDate>
+                📅 {formatDate(appointment.date)} às {appointment.time}
+              </AppointmentDate>
               <AppointmentDoctor>👨‍⚕️ {appointment.doctor}</AppointmentDoctor>
               <AppointmentSpecialty>{appointment.specialty}</AppointmentSpecialty>
             </ListItemInfo>
@@ -271,15 +273,15 @@ function MedicalRecordView({ medicalRecord }: { medicalRecord: PatientMedicalRec
   return (
     <MedicalRecordContainer>
       <MedicalRecordCard>
-        <MedicalRecordCardTitle>📝 Clinical Summary</MedicalRecordCardTitle>
+        <MedicalRecordCardTitle>📝 Resumo</MedicalRecordCardTitle>
         <MedicalRecordText>{medicalRecord.summary}</MedicalRecordText>
       </MedicalRecordCard>
 
       <MedicalRecordGrid>
         <MedicalRecordCard>
-          <MedicalRecordCardTitle>⚠️ Allergies</MedicalRecordCardTitle>
+          <MedicalRecordCardTitle>⚠️ Alergias</MedicalRecordCardTitle>
           {medicalRecord.allergies.length === 0 ? (
-            <MedicalRecordMuted>No allergies registered.</MedicalRecordMuted>
+            <MedicalRecordMuted>Nenhuma alergia registrada.</MedicalRecordMuted>
           ) : (
             <TagList>
               {medicalRecord.allergies.map((a) => <TagRed key={a}>{a}</TagRed>)}
@@ -288,9 +290,9 @@ function MedicalRecordView({ medicalRecord }: { medicalRecord: PatientMedicalRec
         </MedicalRecordCard>
 
         <MedicalRecordCard>
-          <MedicalRecordCardTitle>💊 Medications</MedicalRecordCardTitle>
+          <MedicalRecordCardTitle>💊 Medicamentos</MedicalRecordCardTitle>
           {medicalRecord.medications.length === 0 ? (
-            <MedicalRecordMuted>No medications registered.</MedicalRecordMuted>
+            <MedicalRecordMuted>Nenhum medicamento registrado.</MedicalRecordMuted>
           ) : (
             <TagList>
               {medicalRecord.medications.map((m) => <TagBlue key={m}>{m}</TagBlue>)}
@@ -300,9 +302,9 @@ function MedicalRecordView({ medicalRecord }: { medicalRecord: PatientMedicalRec
       </MedicalRecordGrid>
 
       <MedicalRecordCard>
-        <MedicalRecordCardTitle>🗒️ Notes</MedicalRecordCardTitle>
+        <MedicalRecordCardTitle>🗒️ Observações</MedicalRecordCardTitle>
         {medicalRecord.notes.length === 0 ? (
-          <MedicalRecordMuted>No notes registered.</MedicalRecordMuted>
+          <MedicalRecordMuted>Nenhuma observação registrada.</MedicalRecordMuted>
         ) : (
           <ObsList>
             {medicalRecord.notes.map((obs, i) => (
@@ -313,7 +315,7 @@ function MedicalRecordView({ medicalRecord }: { medicalRecord: PatientMedicalRec
       </MedicalRecordCard>
 
       <MedicalRecordUpdated>
-        🕐 Last update: {formatDate(medicalRecord.lastUpdated)}
+        🕐 Última atualização: {formatDate(medicalRecord.lastUpdated)}
       </MedicalRecordUpdated>
     </MedicalRecordContainer>
   );
@@ -329,10 +331,10 @@ export default function PatientTabs({ appointments, medicalRecord }: PatientTabs
 
   
   const TABS: TabItem[] = [
-    { id: "scheduled",   label: `🗓️ Scheduled (${scheduledAppointments.length})`     },
-    { id: "completed",   label: `✅ Completed (${completedAppointments.length})`      },
-    { id: "canceled", label: `❌ Canceled (${canceledAppointments.length})`  },
-    { id: "medicalRecord", label: "📁 Medical Record"                         },
+    { id: 'scheduled', label: `🗓️ Agendados (${scheduledAppointments.length})` },
+    { id: 'completed', label: `✅ Concluídos (${completedAppointments.length})` },
+    { id: 'canceled', label: `❌ Cancelados (${canceledAppointments.length})` },
+    { id: 'medicalRecord', label: '📁 Meu acompanhamento' },
   ];
 
   const config = TAB_CONFIG[activeTab as TabKey] ?? TAB_CONFIG.scheduled;
@@ -349,7 +351,7 @@ export default function PatientTabs({ appointments, medicalRecord }: PatientTabs
         {activeTab === "scheduled" && (
           <AppointmentsList
             appointments={scheduledAppointments}
-            emptyMessage="No scheduled appointments."
+            emptyMessage="Nenhuma consulta agendada."
             accentColor={config.accent}
             badgeColor={config.accent}
             badgeLabel={config.badgeLabel}
@@ -358,7 +360,7 @@ export default function PatientTabs({ appointments, medicalRecord }: PatientTabs
         {activeTab === "completed" && (
           <AppointmentsList
             appointments={completedAppointments}
-            emptyMessage="No completed appointments recorded."
+            emptyMessage="Nenhum atendimento concluído registrado."
             accentColor={config.accent}
             badgeColor={config.accent}
             badgeLabel={config.badgeLabel}
@@ -367,7 +369,7 @@ export default function PatientTabs({ appointments, medicalRecord }: PatientTabs
         {activeTab === "canceled" && (
           <AppointmentsList
             appointments={canceledAppointments}
-            emptyMessage="No canceled appointments."
+            emptyMessage="Nenhum agendamento cancelado."
             accentColor={config.accent}
             badgeColor={config.accent}
             badgeLabel={config.badgeLabel}
