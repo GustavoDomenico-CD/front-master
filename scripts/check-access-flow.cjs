@@ -60,6 +60,7 @@ async function main() {
   await req('/api/admin/whatsapp/status')
   await req('/api/admin/whatsapp/config')
   await req('/api/admin/whatsapp/kpis')
+  await req('/api/admin/whatsapp/contacts?page=1&per_page=20')
 }
 
 main().catch((e) => {
