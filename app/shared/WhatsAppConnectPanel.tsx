@@ -241,9 +241,11 @@ export default function WhatsAppConnectPanel({ pollMs = 2500 }: { pollMs?: numbe
         </StatusPill>
       </TitleRow>
 
-      <Meta>
-        Instância: <b>{status?.instanceName ?? '—'}</b> · Número: <b>{status?.phoneNumber ?? '—'}</b>
-      </Meta>
+      {status?.phoneNumber && (
+        <Meta>
+          Número conectado: <b>{status.phoneNumber}</b>
+        </Meta>
+      )}
 
       <Actions>
         {!connected ? (
@@ -271,11 +273,6 @@ export default function WhatsAppConnectPanel({ pollMs = 2500 }: { pollMs?: numbe
       )}
 
       {error && <ErrorText>{error}</ErrorText>}
-      {!error && !status?.instanceName && (
-        <ErrorText>
-          Nenhuma configuração ativa encontrada. Crie uma configuração na seção abaixo ("Nova Configuração") e tente conectar novamente.
-        </ErrorText>
-      )}
 
       {connected && (
         <ChatCard>

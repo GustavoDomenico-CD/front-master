@@ -2,17 +2,12 @@
 
 import { useState, useCallback } from 'react'
 import type {
-  WhatsAppConfig,
   WhatsAppContact,
   WhatsAppMessage,
   WhatsAppTemplate,
   WhatsAppKPIs,
 } from '@/app/types/whatsapp'
 import {
-  fetchWhatsAppConfigs,
-  createWhatsAppConfig,
-  updateWhatsAppConfig,
-  deleteWhatsAppConfig,
   fetchWhatsAppStatus,
   connectWhatsApp,
   disconnectWhatsApp,
@@ -30,62 +25,6 @@ import {
   deleteWhatsAppTemplate,
   fetchWhatsAppKPIs,
 } from '@/app/lib/whatsapp-api'
-
-export function useWhatsAppConfig() {
-  const [configs, setConfigs] = useState<WhatsAppConfig[]>([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  const load = useCallback(async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      const data = await fetchWhatsAppConfigs()
-      setConfigs(data)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao carregar configuracoes')
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  const create = useCallback(async (body: { instanceName: string; phoneNumber: string; apiKey: string; webhookUrl?: string }) => {
-    setError(null)
-    try {
-      const config = await createWhatsAppConfig(body)
-      setConfigs(prev => [config, ...prev])
-      return config
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao criar')
-      throw err
-    }
-  }, [])
-
-  const update = useCallback(async (id: number, body: Partial<WhatsAppConfig>) => {
-    setError(null)
-    try {
-      const config = await updateWhatsAppConfig(id, body)
-      setConfigs(prev => prev.map(c => c.id === id ? config : c))
-      return config
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao atualizar')
-      throw err
-    }
-  }, [])
-
-  const remove = useCallback(async (id: number) => {
-    setError(null)
-    try {
-      await deleteWhatsAppConfig(id)
-      setConfigs(prev => prev.filter(c => c.id !== id))
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao remover')
-      throw err
-    }
-  }, [])
-
-  return { configs, loading, error, load, create, update, remove }
-}
 
 export function useWhatsAppMessages() {
   const [messages, setMessages] = useState<WhatsAppMessage[]>([])
