@@ -496,7 +496,8 @@ const ActionButton = styled.button<{ $variant: 'primary' | 'secondary' }>`
   }
 `
 
-export default function ChatManager({ apiBaseUrl = '', userId, principal }: ChatManagerProps) {
+export default function ChatManager({ apiBaseUrl = '', userId, principal: _principal }: ChatManagerProps) {
+  void _principal
   const [chatHistory, setChatHistory] = useState<Message[]>([])
   const [isProcessing, setIsProcessing] = useState(false)
   const [currentTheme, setCurrentTheme] = useState(() => {
@@ -734,13 +735,6 @@ export default function ChatManager({ apiBaseUrl = '', userId, principal }: Chat
     }
   }
 
-  const inheritedRoles =
-    principal?.roles && principal.roles.length > 0
-      ? principal.roles
-      : principal?.role
-        ? [principal.role]
-        : []
-
   const filteredConsultationOptions = DENTISTRY_CONSULTATION_OPTIONS.filter((option) => {
     const query = patientForm.consultationType.trim().toLowerCase()
     if (!query) return true
@@ -767,7 +761,7 @@ export default function ChatManager({ apiBaseUrl = '', userId, principal }: Chat
 
     setPatientLoading(true)
     try {
-      const res = await fetch('/api/auth/register', {
+      const res = await fetch('/api/chatbot/cadastro', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -778,9 +772,6 @@ export default function ChatManager({ apiBaseUrl = '', userId, principal }: Chat
           phone: patientForm.phone.trim() || undefined,
           consultationType: patientForm.consultationType.trim() || undefined,
           consultationCategory: 'odontologia',
-          role: 'paciente',
-          roles: inheritedRoles.length > 0 ? inheritedRoles : undefined,
-          permissions: principal?.permissions?.length ? principal.permissions : undefined,
         }),
       })
 
@@ -794,7 +785,7 @@ export default function ChatManager({ apiBaseUrl = '', userId, principal }: Chat
       }
 
       addMessage(
-        'Paciente cadastrado com sucesso. O administrador poderá acessar com as mesmas roles/permissões do usuário principal.',
+        'Paciente cadastrado com sucesso (perfil paciente). O registro foi salvo na tabela de cadastros do chatbot.',
         false,
       )
 
