@@ -48,6 +48,10 @@ interface Appointment{
     hour: number;
     duration: number;
     observations?: string;
+    /** Prontuário / receitas (texto) para envio ao paciente. */
+    prescriptionText?: string;
+    /** Quando o backend enviou a receita por WhatsApp (ISO). */
+    whatsappPrescriptionSentAt?: string;
 }
 
 interface Filters{

@@ -249,10 +249,13 @@ export default function AppoimentsPanel() {
                 setModalOpen(false);
                 setAgendamentoEdit(null);
               }}
-              onSuccess={() => {
+              onSuccess={(detail) => {
                 setModalOpen(false);
                 setAgendamentoEdit(null);
-                setStatusMessage({ type: 'success', message: 'Agendamento atualizado com sucesso.' });
+                setStatusMessage({
+                  type: 'success',
+                  message: `Agendamento atualizado com sucesso.${detail ?? ''}`,
+                });
                 fetchAgendamentos(pagination.currentPage, filtros);
               }}
             />

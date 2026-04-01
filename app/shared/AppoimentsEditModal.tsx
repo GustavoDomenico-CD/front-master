@@ -233,6 +233,7 @@ const STATUS_OPTIONS = [
   'Cliente Chegou',
   'Confirmado',
   'Tratamento concluido',
+  'Concluído',
   'Confirmar',
   'Compromisso pessoal',
   'Desmarcou',
@@ -244,7 +245,7 @@ const STATUS_OPTIONS = [
 interface EditarAgendamentoModalProps {
   agendamento: Appointment;
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: (detail?: string) => void;
 }
 
 export default function EditarAgendamentoModal({
@@ -253,6 +254,7 @@ export default function EditarAgendamentoModal({
   onSuccess,
 }: EditarAgendamentoModalProps) {
   const [form, setForm] = useState<Appointment>({ ...agendamento });
+  const [sendPrescriptionWhatsApp, setSendPrescriptionWhatsApp] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
@@ -285,18 +287,45 @@ export default function EditarAgendamentoModal({
     setError(null);
 
     try {
+      const payload = {
+        ...form,
+        sendPrescriptionWhatsApp:
+          sendPrescriptionWhatsApp && Boolean((form.prescriptionText || '').trim()),
+      };
+
       const res = await fetch(`/api/admin/${agendamento.id}/update`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       });
 
+      const data = await res.json().catch(() => ({}));
+
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
         throw new Error(data?.message || `Erro ${res.status}: não foi possível atualizar.`);
       }
 
-      onSuccess();
+      const w = data.whatsappFollowUp as
+        | { sent?: boolean; parts?: number; skipped?: string; error?: string }
+        | undefined;
+      let detail = '';
+      if (w?.sent) {
+        detail =
+          w.parts && w.parts > 1
+            ? ` Receita enviada por WhatsApp (${w.parts} mensagens).`
+            : ' Receita enviada por WhatsApp.';
+      } else if (w?.error === 'missing_phone') {
+        detail = ' Não foi possível enviar WhatsApp: telefone ausente.';
+      } else if (w?.error) {
+        detail = ` WhatsApp: ${w.error}`;
+      } else if (w?.skipped === 'already_sent') {
+        detail = ' Receita já havia sido enviada por WhatsApp (use reenvio no backend se necessário).';
+      } else if (w?.skipped === 'status_not_completed') {
+        detail =
+          ' Receita não enviada: escolha um status de atendimento concluído (ex.: Atendido, Concluído) ou desmarque o envio.';
+      }
+
+      onSuccess(detail);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Erro inesperado.');
     } finally {
@@ -477,6 +506,49 @@ export default function EditarAgendamentoModal({
                   placeholder="Informações adicionais..."
                 />
               </FormGroup>
+            </FormGrid>
+
+            <GroupTitle>Pós-consulta — receita / prontuário (WhatsApp)</GroupTitle>
+            <FormGrid cols={1}>
+              <FormGroup $full>
+                <Label htmlFor="prescriptionText">Texto da receita e orientações para o paciente</Label>
+                <Textarea
+                  id="prescriptionText"
+                  name="prescriptionText"
+                  value={form.prescriptionText ?? ''}
+                  onChange={handleChange}
+                  placeholder="Medicamentos, posologia, cuidados… Será enviado ao paciente se você marcar a opção abaixo e o status indicar atendimento concluído."
+                  style={{ minHeight: 120 }}
+                />
+              </FormGroup>
+              <FormGroup $full>
+                <label
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: 10,
+                    cursor: 'pointer',
+                    fontSize: 14,
+                    color: '#374151',
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={sendPrescriptionWhatsApp}
+                    onChange={(e) => setSendPrescriptionWhatsApp(e.target.checked)}
+                    style={{ marginTop: 3 }}
+                  />
+                  <span>
+                    Enviar este texto ao paciente por WhatsApp após salvar (é necessário WhatsApp
+                    conectado no painel e telefone válido no cadastro).
+                  </span>
+                </label>
+              </FormGroup>
+              {form.whatsappPrescriptionSentAt && (
+                <p style={{ fontSize: 12, color: '#6b7280', margin: 0 }}>
+                  Último envio registrado: {new Date(form.whatsappPrescriptionSentAt).toLocaleString('pt-BR')}
+                </p>
+              )}
             </FormGrid>
           </ModalBody>
 
