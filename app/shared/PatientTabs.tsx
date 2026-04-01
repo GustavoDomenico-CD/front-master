@@ -4,14 +4,14 @@ import styled from "styled-components";
 import { useState } from "react";
 import DashboardTabs, { TabItem } from "./DashboardTabs";
 import { theme } from "@/app/styles/theme";
-import { Consulta, PatientProntuario } from "@/app/types/patient";
+import { Appointment, PatientMedicalRecord } from "@/app/types/patient";
 
 type PatientTabsProps = {
-  consultas: Consulta[];
-  prontuario: PatientProntuario;
+  appointments: Appointment[];
+  medicalRecord: PatientMedicalRecord;
 };
 
-type TabKey = "marcadas" | "feitas" | "canceladas" | "prontuario";
+type TabKey = "scheduled" | "completed" | "canceled" | "medicalRecord";
 
 function formatDate(dateStr: string) {
   const [year, month, day] = dateStr.split("-");
@@ -68,18 +68,18 @@ const ListItemInfo = styled.div`
   align-items: center;
 `;
 
-const ConsultaDate = styled.span`
+const AppointmentDate = styled.span`
   font-size: 14px;
   font-weight: 600;
   color: #1e293b;
 `;
 
-const ConsultaMedico = styled.span`
+const AppointmentDoctor = styled.span`
   font-size: 14px;
   color: #475569;
 `;
 
-const ConsultaEspecialidade = styled.span`
+const AppointmentSpecialty = styled.span`
   font-size: 12px;
   color: #94a3b8;
   background: ${theme.colors.border};
@@ -87,7 +87,7 @@ const ConsultaEspecialidade = styled.span`
   border-radius: 999px;
 `;
 
-const ConsultaObs = styled.p`
+const AppointmentNotes = styled.p`
   font-size: 13px;
   color: ${theme.colors.gray};
   margin: 0;
@@ -125,13 +125,13 @@ const EmptyText = styled.p`
   margin: 0;
 `;
 
-const ProntuarioContainer = styled.div`
+const MedicalRecordContainer = styled.div`
   display: flex;
   flex-direction: column;
   gap: 16px;
 `;
 
-const ProntuarioGrid = styled.div`
+const MedicalRecordGrid = styled.div`
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
@@ -141,35 +141,35 @@ const ProntuarioGrid = styled.div`
   }
 `;
 
-const ProntuarioCard = styled.div`
+const MedicalRecordCard = styled.div`
   background: #f8fafc;
   border-radius: ${theme.radius.md};
   padding: 16px;
   border: 1px solid ${theme.colors.border};
 `;
 
-const ProntuarioCardTitle = styled.h3`
+const MedicalRecordCardTitle = styled.h3`
   font-size: 14px;
   font-weight: 700;
   color: #1e293b;
   margin: 0 0 10px 0;
 `;
 
-const ProntuarioText = styled.p`
+const MedicalRecordText = styled.p`
   font-size: 14px;
   color: #475569;
   line-height: 1.6;
   margin: 0;
 `;
 
-const ProntuarioMuted = styled.p`
+const MedicalRecordMuted = styled.p`
   font-size: 13px;
   color: #94a3b8;
   font-style: italic;
   margin: 0;
 `;
 
-const ProntuarioUpdated = styled.p`
+const MedicalRecordUpdated = styled.p`
   font-size: 12px;
   color: #94a3b8;
   margin: 0;
@@ -216,30 +216,30 @@ const ObsItem = styled.li`
   line-height: 1.5;
 `;
 
-//Tab Config 
+// Tab configuration
 
 const TAB_CONFIG: Record<TabKey, { accent: string; badgeLabel: string }> = {
-  marcadas:   { accent: theme.colors.primary, badgeLabel: "Agendada"  },
-  feitas:     { accent: theme.colors.success,  badgeLabel: "Realizada" },
-  canceladas: { accent: theme.colors.danger,   badgeLabel: "Cancelada" },
-  prontuario: { accent: "#a855f7",              badgeLabel: ""          },
+  scheduled:   { accent: theme.colors.primary, badgeLabel: "Scheduled"  },
+  completed:   { accent: theme.colors.success,  badgeLabel: "Completed" },
+  canceled:    { accent: theme.colors.danger,   badgeLabel: "Canceled" },
+  medicalRecord: { accent: "#a855f7", badgeLabel: "" },
 };
 
 // Sub-components
 function AppointmentsList({
-  consultas,
+  appointments,
   emptyMessage,
   accentColor,
   badgeColor,
   badgeLabel,
 }: {
-  consultas: Consulta[];
+  appointments: Appointment[];
   emptyMessage: string;
   accentColor: string;
   badgeColor: string;
   badgeLabel: string;
 }) {
-  if (consultas.length === 0) {
+  if (appointments.length === 0) {
     return (
       <EmptyState>
         <EmptyIcon>📋</EmptyIcon>
@@ -250,92 +250,92 @@ function AppointmentsList({
 
   return (
     <List>
-      {consultas.map((c) => (
-        <ListItem key={c.id} $accentColor={accentColor}>
+      {appointments.map((appointment) => (
+        <ListItem key={appointment.id} $accentColor={accentColor}>
           <ListItemTop>
             <ListItemInfo>
-              <ConsultaDate>📅 {formatDate(c.data)} às {c.hora}</ConsultaDate>
-              <ConsultaMedico>👨‍⚕️ {c.medico}</ConsultaMedico>
-              <ConsultaEspecialidade>{c.especialidade}</ConsultaEspecialidade>
+              <AppointmentDate>📅 {formatDate(appointment.date)} at {appointment.time}</AppointmentDate>
+              <AppointmentDoctor>👨‍⚕️ {appointment.doctor}</AppointmentDoctor>
+              <AppointmentSpecialty>{appointment.specialty}</AppointmentSpecialty>
             </ListItemInfo>
             <BadgeTag $color={badgeColor}>{badgeLabel}</BadgeTag>
           </ListItemTop>
-          {c.observacao && <ConsultaObs>💬 {c.observacao}</ConsultaObs>}
+          {appointment.notes && <AppointmentNotes>💬 {appointment.notes}</AppointmentNotes>}
         </ListItem>
       ))}
     </List>
   );
 }
 
-function ProntuarioView({ prontuario }: { prontuario: PatientProntuario }) {
+function MedicalRecordView({ medicalRecord }: { medicalRecord: PatientMedicalRecord }) {
   return (
-    <ProntuarioContainer>
-      <ProntuarioCard>
-        <ProntuarioCardTitle>📝 Resumo Clínico</ProntuarioCardTitle>
-        <ProntuarioText>{prontuario.resumo}</ProntuarioText>
-      </ProntuarioCard>
+    <MedicalRecordContainer>
+      <MedicalRecordCard>
+        <MedicalRecordCardTitle>📝 Clinical Summary</MedicalRecordCardTitle>
+        <MedicalRecordText>{medicalRecord.summary}</MedicalRecordText>
+      </MedicalRecordCard>
 
-      <ProntuarioGrid>
-        <ProntuarioCard>
-          <ProntuarioCardTitle>⚠️ Alergias</ProntuarioCardTitle>
-          {prontuario.alergias.length === 0 ? (
-            <ProntuarioMuted>Nenhuma alergia registrada.</ProntuarioMuted>
+      <MedicalRecordGrid>
+        <MedicalRecordCard>
+          <MedicalRecordCardTitle>⚠️ Allergies</MedicalRecordCardTitle>
+          {medicalRecord.allergies.length === 0 ? (
+            <MedicalRecordMuted>No allergies registered.</MedicalRecordMuted>
           ) : (
             <TagList>
-              {prontuario.alergias.map((a) => <TagRed key={a}>{a}</TagRed>)}
+              {medicalRecord.allergies.map((a) => <TagRed key={a}>{a}</TagRed>)}
             </TagList>
           )}
-        </ProntuarioCard>
+        </MedicalRecordCard>
 
-        <ProntuarioCard>
-          <ProntuarioCardTitle>💊 Medicamentos</ProntuarioCardTitle>
-          {prontuario.medicamentos.length === 0 ? (
-            <ProntuarioMuted>Nenhum medicamento registrado.</ProntuarioMuted>
+        <MedicalRecordCard>
+          <MedicalRecordCardTitle>💊 Medications</MedicalRecordCardTitle>
+          {medicalRecord.medications.length === 0 ? (
+            <MedicalRecordMuted>No medications registered.</MedicalRecordMuted>
           ) : (
             <TagList>
-              {prontuario.medicamentos.map((m) => <TagBlue key={m}>{m}</TagBlue>)}
+              {medicalRecord.medications.map((m) => <TagBlue key={m}>{m}</TagBlue>)}
             </TagList>
           )}
-        </ProntuarioCard>
-      </ProntuarioGrid>
+        </MedicalRecordCard>
+      </MedicalRecordGrid>
 
-      <ProntuarioCard>
-        <ProntuarioCardTitle>🗒️ Observações</ProntuarioCardTitle>
-        {prontuario.observacoes.length === 0 ? (
-          <ProntuarioMuted>Nenhuma observação registrada.</ProntuarioMuted>
+      <MedicalRecordCard>
+        <MedicalRecordCardTitle>🗒️ Notes</MedicalRecordCardTitle>
+        {medicalRecord.notes.length === 0 ? (
+          <MedicalRecordMuted>No notes registered.</MedicalRecordMuted>
         ) : (
           <ObsList>
-            {prontuario.observacoes.map((obs, i) => (
+            {medicalRecord.notes.map((obs, i) => (
               <ObsItem key={i}>{obs}</ObsItem>
             ))}
           </ObsList>
         )}
-      </ProntuarioCard>
+      </MedicalRecordCard>
 
-      <ProntuarioUpdated>
-        🕐 Última atualização: {formatDate(prontuario.ultimaAtualizacao)}
-      </ProntuarioUpdated>
-    </ProntuarioContainer>
+      <MedicalRecordUpdated>
+        🕐 Last update: {formatDate(medicalRecord.lastUpdated)}
+      </MedicalRecordUpdated>
+    </MedicalRecordContainer>
   );
 }
 
 // PatientTabs (main)
-export default function PatientTabs({ consultas, prontuario }: PatientTabsProps) {
-  const [activeTab, setActiveTab] = useState<string>("marcadas");
+export default function PatientTabs({ appointments, medicalRecord }: PatientTabsProps) {
+  const [activeTab, setActiveTab] = useState<string>("scheduled");
 
-  const marcadas   = consultas.filter((c) => c.status === "marcada");
-  const feitas     = consultas.filter((c) => c.status === "feita");
-  const canceladas = consultas.filter((c) => c.status === "cancelada");
+  const scheduledAppointments = appointments.filter((c) => c.status === "scheduled");
+  const completedAppointments = appointments.filter((c) => c.status === "completed");
+  const canceledAppointments = appointments.filter((c) => c.status === "canceled");
 
   
   const TABS: TabItem[] = [
-    { id: "marcadas",   label: `🗓️ Marcadas (${marcadas.length})`     },
-    { id: "feitas",     label: `✅ Realizadas (${feitas.length})`      },
-    { id: "canceladas", label: `❌ Canceladas (${canceladas.length})`  },
-    { id: "prontuario", label: "📁 Prontuário"                         },
+    { id: "scheduled",   label: `🗓️ Scheduled (${scheduledAppointments.length})`     },
+    { id: "completed",   label: `✅ Completed (${completedAppointments.length})`      },
+    { id: "canceled", label: `❌ Canceled (${canceledAppointments.length})`  },
+    { id: "medicalRecord", label: "📁 Medical Record"                         },
   ];
 
-  const config = TAB_CONFIG[activeTab as TabKey] ?? TAB_CONFIG.marcadas;
+  const config = TAB_CONFIG[activeTab as TabKey] ?? TAB_CONFIG.scheduled;
 
   return (
     <Wrapper>
@@ -346,35 +346,35 @@ export default function PatientTabs({ consultas, prontuario }: PatientTabsProps)
       />
 
       <TabContent>
-        {activeTab === "marcadas" && (
+        {activeTab === "scheduled" && (
           <AppointmentsList
-            consultas={marcadas}
-            emptyMessage="Nenhuma consulta agendada."
+            appointments={scheduledAppointments}
+            emptyMessage="No scheduled appointments."
             accentColor={config.accent}
             badgeColor={config.accent}
             badgeLabel={config.badgeLabel}
           />
         )}
-        {activeTab === "feitas" && (
+        {activeTab === "completed" && (
           <AppointmentsList
-            consultas={feitas}
-            emptyMessage="Nenhuma consulta realizada registrada."
+            appointments={completedAppointments}
+            emptyMessage="No completed appointments recorded."
             accentColor={config.accent}
             badgeColor={config.accent}
             badgeLabel={config.badgeLabel}
           />
         )}
-        {activeTab === "canceladas" && (
+        {activeTab === "canceled" && (
           <AppointmentsList
-            consultas={canceladas}
-            emptyMessage="Nenhuma consulta cancelada."
+            appointments={canceledAppointments}
+            emptyMessage="No canceled appointments."
             accentColor={config.accent}
             badgeColor={config.accent}
             badgeLabel={config.badgeLabel}
           />
         )}
-        {activeTab === "prontuario" && (
-          <ProntuarioView prontuario={prontuario} />
+        {activeTab === "medicalRecord" && (
+          <MedicalRecordView medicalRecord={medicalRecord} />
         )}
       </TabContent>
     </Wrapper>

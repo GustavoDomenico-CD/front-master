@@ -32,8 +32,8 @@ export default function PatientDashboard({ patient }: PatientDashboardProps) {
 
       <Section $marginTop={24}>
         <PatientTabs
-          consultas={patient.consultas}
-          prontuario={patient.prontuario}
+          appointments={patient.appointments}
+          medicalRecord={patient.medicalRecord}
         />
       </Section>
     </PageWrapper>

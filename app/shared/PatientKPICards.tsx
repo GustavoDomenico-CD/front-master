@@ -62,23 +62,23 @@ export default function PatientKPICards({ patient }: PatientKPICardsProps) {
     <CardsGrid>
       <Card>
         <IconWrapper>🗓️</IconWrapper>
-        <Title>Consultas Marcadas</Title>
-        <Value $color={theme.colors.primary}>{patient.consultasMarcadas}</Value>
-        <Subtitle>Total de consultas agendadas</Subtitle>
+        <Title>Scheduled Appointments</Title>
+        <Value $color={theme.colors.primary}>{patient.scheduledAppointments}</Value>
+        <Subtitle>Total scheduled appointments</Subtitle>
       </Card>
 
       <Card>
         <IconWrapper>✅</IconWrapper>
-        <Title>Consultas Realizadas</Title>
-        <Value $color={theme.colors.success}>{patient.consultasFeitas}</Value>
-        <Subtitle>Total de consultas realizadas</Subtitle>
+        <Title>Completed Appointments</Title>
+        <Value $color={theme.colors.success}>{patient.completedAppointments}</Value>
+        <Subtitle>Total completed appointments</Subtitle>
       </Card>
 
       <Card>
         <IconWrapper>❌</IconWrapper>
-        <Title>Consultas Canceladas</Title>
-        <Value $color={theme.colors.danger}>{patient.consultasCanceladas}</Value>
-        <Subtitle>Total de consultas canceladas</Subtitle>
+        <Title>Canceled Appointments</Title>
+        <Value $color={theme.colors.danger}>{patient.canceledAppointments}</Value>
+        <Subtitle>Total canceled appointments</Subtitle>
       </Card>
     </CardsGrid>
   );

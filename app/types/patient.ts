@@ -1,32 +1,31 @@
-export interface PatientProntuario {
-  resumo: string;
-  observacoes: string[];
-  alergias: string[];
-  medicamentos: string[];
-  ultimaAtualizacao: string;
+export interface PatientMedicalRecord {
+  summary: string;
+  notes: string[];
+  allergies: string[];
+  medications: string[];
+  lastUpdated: string;
 }
 
-// ✅ Novo tipo adicionado
-export interface Consulta {
+export interface Appointment {
   id: string;
-  data: string;
-  hora: string;
-  medico: string;
-  especialidade: string;
-  status: "marcada" | "feita" | "cancelada";
-  observacao?: string;
+  date: string;
+  time: string;
+  doctor: string;
+  specialty: string;
+  status: "scheduled" | "completed" | "canceled";
+  notes?: string;
 }
 
 export interface PatientDashboardData {
   id: string;
-  nome: string;
-  idade: number;
-  telefone: string;
+  name: string;
+  age: number;
+  phone: string;
   email: string;
-  status: "Ativo" | "Inativo";
-  consultasMarcadas: number;
-  consultasFeitas: number;
-  consultasCanceladas: number;
-  prontuario: PatientProntuario;
-  consultas: Consulta[]; 
+  status: "Active" | "Inactive";
+  scheduledAppointments: number;
+  completedAppointments: number;
+  canceledAppointments: number;
+  medicalRecord: PatientMedicalRecord;
+  appointments: Appointment[];
 }
