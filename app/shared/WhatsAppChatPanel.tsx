@@ -251,16 +251,47 @@ const ChatHeaderPhone = styled.div`
   color: #6b7280;
 `
 
-const AgentBadge = styled.span`
+const AgentToggleButton = styled.button<{ $enabled: boolean }>`
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px 10px;
+  gap: 6px;
+  padding: 6px 14px;
   border-radius: 999px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
-  background: #dcfce7;
-  color: #166534;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: ${p => (p.$enabled ? '#dcfce7' : '#fee2e2')};
+  color: ${p => (p.$enabled ? '#166534' : '#991b1b')};
+
+  &:hover {
+    opacity: 0.85;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+`
+
+const AgentDot = styled.span<{ $enabled: boolean }>`
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: ${p => (p.$enabled ? '#25d366' : '#ef4444')};
+`
+
+const ContactAgentDot = styled.span<{ $enabled: boolean }>`
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: ${p => (p.$enabled ? '#25d366' : '#ef4444')};
+  margin-left: 6px;
+  flex-shrink: 0;
+  title: ${p => (p.$enabled ? 'Agente ativo' : 'Agente desativado')};
 `
 
 const MessagesContainer = styled.div`
@@ -544,7 +575,7 @@ function mediaIcon(type: string): string {
 const POLL_INTERVAL = 8000
 
 export default function WhatsAppChatPanel() {
-  const { contacts, loading: contactsLoading, error: contactsError, load: loadContacts } = useWhatsAppContacts()
+  const { contacts, loading: contactsLoading, error: contactsError, load: loadContacts, toggleAgent } = useWhatsAppContacts()
   const { messages, loading: msgsLoading, error: msgsError, load: loadMessages, send } = useWhatsAppMessages()
   const { status, load: loadStatus } = useWhatsAppStatus()
 
@@ -552,6 +583,7 @@ export default function WhatsAppChatPanel() {
   const [search, setSearch] = useState('')
   const [text, setText] = useState('')
   const [sending, setSending] = useState(false)
+  const [togglingAgent, setTogglingAgent] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const pollRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -633,6 +665,17 @@ export default function WhatsAppChatPanel() {
     setSending(false)
   }
 
+  // ─── Toggle agent for contact ───
+  const handleToggleAgent = async () => {
+    if (!selectedContact || togglingAgent) return
+    setTogglingAgent(true)
+    try {
+      await toggleAgent(selectedContact.id)
+      setSelectedContact(prev => prev ? { ...prev, agentEnabled: !prev.agentEnabled } : null)
+    } catch { /* hook handles error */ }
+    setTogglingAgent(false)
+  }
+
   // ─── Select contact ───
   const handleSelectContact = (contact: WhatsAppContact) => {
     setSelectedContact(contact)
@@ -708,6 +751,7 @@ export default function WhatsAppChatPanel() {
                 </ContactNameRow>
                 <ContactPreview>
                   {contact.phoneNumber}
+                  <ContactAgentDot $enabled={contact.agentEnabled} />
                 </ContactPreview>
               </ContactMeta>
             </ContactItem>
@@ -733,9 +777,15 @@ export default function WhatsAppChatPanel() {
               <ChatHeaderName>{selectedContact.name}</ChatHeaderName>
               <ChatHeaderPhone>{selectedContact.phoneNumber}</ChatHeaderPhone>
             </ChatHeaderInfo>
-            <AgentBadge>
-              &#9679; Agente Ativo
-            </AgentBadge>
+            <AgentToggleButton
+              $enabled={selectedContact.agentEnabled}
+              onClick={handleToggleAgent}
+              disabled={togglingAgent}
+              title={selectedContact.agentEnabled ? 'Clique para desativar o agente neste contato' : 'Clique para ativar o agente neste contato'}
+            >
+              <AgentDot $enabled={selectedContact.agentEnabled} />
+              {togglingAgent ? 'Alterando...' : selectedContact.agentEnabled ? 'Agente Ativo' : 'Agente Inativo'}
+            </AgentToggleButton>
           </ChatHeader>
 
           {msgsError && (

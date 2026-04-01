@@ -197,6 +197,13 @@ export async function toggleBlockContact(id: number): Promise<WhatsAppContact> {
   return data.data
 }
 
+export async function toggleAgentContact(id: number): Promise<WhatsAppContact> {
+  const res = await apiRequest(`/api/admin/whatsapp/contacts/${id}/toggle-agent`, { method: 'PATCH' })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.message ?? 'Erro ao alterar agente')
+  return data.data
+}
+
 // ─── Templates ──────────────────────────────────────────
 
 export async function fetchWhatsAppTemplates(): Promise<WhatsAppTemplate[]> {
