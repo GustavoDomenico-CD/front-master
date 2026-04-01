@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import styled from 'styled-components'
 import QRCode from 'qrcode'
 import { useWhatsAppStatus } from '@/app/hooks/useWhatsApp'
@@ -162,13 +162,24 @@ const ChatSendButton = styled.button`
   }
 `
 
+function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader()
+    r.onload = () => resolve(typeof r.result === 'string' ? r.result : '')
+    r.onerror = () => reject(new Error('Falha ao ler arquivo'))
+    r.readAsDataURL(file)
+  })
+}
+
 export default function WhatsAppConnectPanel({ pollMs = 2500 }: { pollMs?: number }) {
   const { status, loading, error, load, connect, disconnect, resetSession } = useWhatsAppStatus()
-  const { send } = useWhatsAppMessages()
+  const { send, sendMedia } = useWhatsAppMessages()
   const [busy, setBusy] = useState(false)
   const [chatPhone, setChatPhone] = useState('')
   const [chatText, setChatText] = useState('')
   const [sendingChat, setSendingChat] = useState(false)
+  const [chatImage, setChatImage] = useState<File | null>(null)
+  const chatImageRef = useRef<HTMLInputElement>(null)
   /** QR gerado no browser a partir de `qrRaw` (recomendação Baileys), com fallback para `qr` do servidor. */
   const [qrImageSrc, setQrImageSrc] = useState<string | null>(null)
 
@@ -247,9 +258,24 @@ export default function WhatsAppConnectPanel({ pollMs = 2500 }: { pollMs?: numbe
   }
 
   const handleSendQuickChat = async () => {
-    if (!connected || !chatPhone.trim() || !chatText.trim()) return
+    if (!connected || !chatPhone.trim()) return
     setSendingChat(true)
     try {
+      if (chatImage) {
+        const dataUrl = await readFileAsDataUrl(chatImage)
+        await sendMedia({
+          to: chatPhone.trim(),
+          type: 'image',
+          mediaBase64: dataUrl,
+          mimeType: chatImage.type || 'image/jpeg',
+          caption: chatText.trim() || undefined,
+        })
+        setChatText('')
+        setChatImage(null)
+        if (chatImageRef.current) chatImageRef.current.value = ''
+        return
+      }
+      if (!chatText.trim()) return
       await send(chatPhone.trim(), chatText.trim())
       setChatText('')
     } catch {
@@ -306,13 +332,27 @@ export default function WhatsAppConnectPanel({ pollMs = 2500 }: { pollMs?: numbe
         <ChatCard>
           <ChatTitle>Chat rápido WhatsApp</ChatTitle>
           <ChatRow>
+            <input
+              ref={chatImageRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              style={{ display: 'none' }}
+              onChange={(e) => setChatImage(e.target.files?.[0] ?? null)}
+            />
+            <ChatSendButton
+              type="button"
+              onClick={() => chatImageRef.current?.click()}
+              style={{ background: '#64748b' }}
+            >
+              Foto
+            </ChatSendButton>
             <ChatInput
-              placeholder="Número destino (ex.: 5511999999999)"
+              placeholder="Número destino (ex.: 11999999999)"
               value={chatPhone}
               onChange={(e) => setChatPhone(e.target.value)}
             />
             <ChatInput
-              placeholder="Digite a mensagem..."
+              placeholder={chatImage ? 'Legenda (opcional)…' : 'Digite a mensagem...'}
               value={chatText}
               onChange={(e) => setChatText(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSendQuickChat()}
@@ -320,9 +360,13 @@ export default function WhatsAppConnectPanel({ pollMs = 2500 }: { pollMs?: numbe
             <ChatSendButton
               type="button"
               onClick={handleSendQuickChat}
-              disabled={sendingChat || !chatPhone.trim() || !chatText.trim()}
+              disabled={
+                sendingChat ||
+                !chatPhone.trim() ||
+                (!chatImage && !chatText.trim())
+              }
             >
-              {sendingChat ? 'Enviando...' : 'Enviar'}
+              {sendingChat ? 'Enviando...' : chatImage ? 'Enviar foto' : 'Enviar'}
             </ChatSendButton>
           </ChatRow>
         </ChatCard>

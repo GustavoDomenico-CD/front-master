@@ -101,10 +101,20 @@ export async function sendWhatsAppTemplate(
   return data.data
 }
 
+function errorFromWhatsAppJson(data: Record<string, unknown>): string {
+  const m = data.message
+  if (typeof m === 'string') return m
+  if (Array.isArray(m)) return m.map(String).join(', ')
+  if (typeof data.mensagem === 'string') return data.mensagem
+  return 'Erro ao enviar mídia'
+}
+
 export async function sendWhatsAppMedia(body: {
   to: string
   type: 'image' | 'document' | 'audio' | 'video'
-  mediaUrl: string
+  mediaUrl?: string
+  mediaBase64?: string
+  mimeType?: string
   caption?: string
   filename?: string
 }) {
@@ -112,8 +122,8 @@ export async function sendWhatsAppMedia(body: {
     method: 'POST',
     body: JSON.stringify(body),
   })
-  const data = await res.json()
-  if (!res.ok) throw new Error(data.message ?? 'Erro ao enviar midia')
+  const data = (await res.json().catch(() => ({}))) as Record<string, unknown>
+  if (!res.ok) throw new Error(errorFromWhatsAppJson(data))
   return data.data
 }
 

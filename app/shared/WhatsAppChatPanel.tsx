@@ -429,6 +429,31 @@ const MessageInput = styled.input`
   }
 `
 
+const AttachButton = styled.button`
+  width: 42px;
+  height: 42px;
+  border: none;
+  border-radius: 50%;
+  background: #64748b;
+  color: #ffffff;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+  flex-shrink: 0;
+
+  &:hover {
+    background: #475569;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+`
+
 const SendButton = styled.button`
   width: 42px;
   height: 42px;
@@ -558,6 +583,15 @@ function statusIcon(status: string): string {
   }
 }
 
+function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader()
+    r.onload = () => resolve(typeof r.result === 'string' ? r.result : '')
+    r.onerror = () => reject(new Error('Falha ao ler arquivo'))
+    r.readAsDataURL(file)
+  })
+}
+
 function mediaIcon(type: string): string {
   switch (type) {
     case 'image':    return '\uD83D\uDDBC\uFE0F'
@@ -576,13 +610,15 @@ const POLL_INTERVAL = 8000
 
 export default function WhatsAppChatPanel() {
   const { contacts, loading: contactsLoading, error: contactsError, load: loadContacts, toggleAgent } = useWhatsAppContacts()
-  const { messages, loading: msgsLoading, error: msgsError, load: loadMessages, send } = useWhatsAppMessages()
+  const { messages, loading: msgsLoading, error: msgsError, load: loadMessages, send, sendMedia } = useWhatsAppMessages()
   const { status, load: loadStatus } = useWhatsAppStatus()
 
   const [selectedContact, setSelectedContact] = useState<WhatsAppContact | null>(null)
   const [search, setSearch] = useState('')
   const [text, setText] = useState('')
   const [sending, setSending] = useState(false)
+  const [pendingImage, setPendingImage] = useState<File | null>(null)
+  const imageInputRef = useRef<HTMLInputElement>(null)
   const [togglingAgent, setTogglingAgent] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const pollRef = useRef<NodeJS.Timeout | null>(null)
@@ -655,13 +691,39 @@ export default function WhatsAppChatPanel() {
   // ─── Send message ───
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!selectedContact || !text.trim() || sending) return
+    if (!selectedContact || sending || selectedContact.isBlocked) return
+
+    if (pendingImage) {
+      setSending(true)
+      try {
+        const dataUrl = await readFileAsDataUrl(pendingImage)
+        await sendMedia({
+          to: selectedContact.phoneNumber,
+          type: 'image',
+          mediaBase64: dataUrl,
+          mimeType: pendingImage.type || 'image/jpeg',
+          caption: text.trim() || undefined,
+        })
+        setText('')
+        setPendingImage(null)
+        if (imageInputRef.current) imageInputRef.current.value = ''
+        await loadMessages({ contactId: selectedContact.id, perPage: 50 })
+      } catch {
+        /* hook handles error */
+      }
+      setSending(false)
+      return
+    }
+
+    if (!text.trim()) return
     setSending(true)
     try {
       await send(selectedContact.phoneNumber, text.trim())
       setText('')
       await loadMessages({ contactId: selectedContact.id, perPage: 50 })
-    } catch { /* hook handles error */ }
+    } catch {
+      /* hook handles error */
+    }
     setSending(false)
   }
 
@@ -843,17 +905,32 @@ export default function WhatsAppChatPanel() {
           </MessagesContainer>
 
           <InputBar onSubmit={handleSend}>
+            <input
+              ref={imageInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              style={{ display: 'none' }}
+              onChange={e => setPendingImage(e.target.files?.[0] ?? null)}
+            />
+            <AttachButton
+              type="button"
+              disabled={sending || selectedContact.isBlocked}
+              title="Enviar foto"
+              onClick={() => imageInputRef.current?.click()}
+            >
+              &#128247;
+            </AttachButton>
             <MessageInput
               type="text"
-              placeholder="Digite uma mensagem..."
+              placeholder={pendingImage ? 'Legenda (opcional)…' : 'Digite uma mensagem...'}
               value={text}
               onChange={e => setText(e.target.value)}
               disabled={sending || selectedContact.isBlocked}
             />
             <SendButton
               type="submit"
-              disabled={sending || !text.trim() || selectedContact.isBlocked}
-              title={selectedContact.isBlocked ? 'Contato bloqueado' : 'Enviar'}
+              disabled={sending || selectedContact.isBlocked || (!pendingImage && !text.trim())}
+              title={selectedContact.isBlocked ? 'Contato bloqueado' : pendingImage ? 'Enviar foto' : 'Enviar'}
             >
               {sending ? '\u23F3' : '\u27A4'}
             </SendButton>

@@ -24,6 +24,7 @@ import {
   updateWhatsAppTemplate,
   deleteWhatsAppTemplate,
   fetchWhatsAppKPIs,
+  sendWhatsAppMedia,
 } from '@/app/lib/whatsapp-api'
 
 export function useWhatsAppMessages() {
@@ -61,7 +62,28 @@ export function useWhatsAppMessages() {
     }
   }, [])
 
-  return { messages, total, pages, loading, error, load, send }
+  const sendMedia = useCallback(
+    async (params: {
+      to: string
+      type: 'image' | 'document' | 'audio' | 'video'
+      mediaUrl?: string
+      mediaBase64?: string
+      mimeType?: string
+      caption?: string
+      filename?: string
+    }) => {
+      setError(null)
+      try {
+        await sendWhatsAppMedia(params)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Erro ao enviar mídia')
+        throw err
+      }
+    },
+    [],
+  )
+
+  return { messages, total, pages, loading, error, load, send, sendMedia }
 }
 
 export function useWhatsAppContacts() {

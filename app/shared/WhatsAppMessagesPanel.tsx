@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import styled from 'styled-components'
 import { useWhatsAppMessages } from '@/app/hooks/useWhatsApp'
 import Pagination from '@/app/shared/Pagination'
@@ -61,6 +61,12 @@ const SendButton = styled.button`
 
   &:hover { background: #1da851; }
   &:disabled { opacity: 0.5; cursor: not-allowed; }
+`
+
+const PickImageButton = styled(SendButton)`
+  background: #64748b;
+  flex: 0 0 auto;
+  &:hover { background: #475569; }
 `
 
 const MessageList = styled.div`
@@ -159,11 +165,22 @@ const PaginationWrapper = styled.div`
   margin-top: 16px;
 `
 
+function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader()
+    r.onload = () => resolve(typeof r.result === 'string' ? r.result : '')
+    r.onerror = () => reject(new Error('Falha ao ler arquivo'))
+    r.readAsDataURL(file)
+  })
+}
+
 export default function WhatsAppMessagesPanel() {
-  const { messages, pages, loading, error, load, send } = useWhatsAppMessages()
+  const { messages, pages, loading, error, load, send, sendMedia } = useWhatsAppMessages()
   const [phone, setPhone] = useState('')
   const [text, setText] = useState('')
   const [sending, setSending] = useState(false)
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [page, setPage] = useState(1)
   const [direction, setDirection] = useState('')
   const [status, setStatus] = useState('')
@@ -181,6 +198,26 @@ export default function WhatsAppMessagesPanel() {
     setSending(false)
   }
 
+  const handleSendImage = async () => {
+    if (!phone.trim() || !imageFile) return
+    setSending(true)
+    try {
+      const dataUrl = await readFileAsDataUrl(imageFile)
+      await sendMedia({
+        to: phone.trim(),
+        type: 'image',
+        mediaBase64: dataUrl,
+        mimeType: imageFile.type || 'image/jpeg',
+        caption: text.trim() || undefined,
+      })
+      setText('')
+      setImageFile(null)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      load({ page, direction: direction || undefined, status: status || undefined })
+    } catch { /* hook */ }
+    setSending(false)
+  }
+
   const formatDate = (d: string) => {
     try { return new Date(d).toLocaleString('pt-BR') } catch { return d }
   }
@@ -190,12 +227,30 @@ export default function WhatsAppMessagesPanel() {
       <Title>Mensagens WhatsApp</Title>
 
       <SendBar>
-        <PhoneInput value={phone} onChange={e => setPhone(e.target.value)} placeholder="Numero (5511...)" />
-        <Input value={text} onChange={e => setText(e.target.value)} placeholder="Digite sua mensagem..." onKeyDown={e => e.key === 'Enter' && handleSend()} />
-        <SendButton onClick={handleSend} disabled={sending || !phone.trim() || !text.trim()}>
-          {sending ? 'Enviando...' : 'Enviar'}
+        <PhoneInput value={phone} onChange={e => setPhone(e.target.value)} placeholder="Número (ex.: 11999999999 ou 5511999999999)" />
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp,image/gif"
+          style={{ display: 'none' }}
+          onChange={e => {
+            const f = e.target.files?.[0] ?? null
+            setImageFile(f)
+          }}
+        />
+        <PickImageButton type="button" onClick={() => fileInputRef.current?.click()} disabled={sending}>
+          Foto
+        </PickImageButton>
+        <Input value={text} onChange={e => setText(e.target.value)} placeholder="Texto ou legenda da foto..." onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (imageFile ? handleSendImage() : handleSend())} />
+        <SendButton onClick={imageFile ? handleSendImage : handleSend} disabled={sending || !phone.trim() || (imageFile ? false : !text.trim())}>
+          {sending ? 'Enviando...' : imageFile ? 'Enviar foto' : 'Enviar'}
         </SendButton>
       </SendBar>
+      {imageFile && (
+        <div style={{ fontSize: 12, color: '#64748b', marginBottom: 8 }}>
+          Imagem: {imageFile.name} — use &quot;Enviar foto&quot; ou Enter
+        </div>
+      )}
 
       <FiltersRow>
         <Select value={direction} onChange={e => { setDirection(e.target.value); setPage(1) }}>
