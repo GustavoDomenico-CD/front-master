@@ -29,11 +29,44 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json()
+    const cookies = await getCookieHeader(request)
 
+    // Route _action toggle/delete to the correct backend endpoints
+    if (body._action === 'toggle' && body.ruleId) {
+      const res = await backendFetch(`/admin/agendamento/proactive/rules/${body.ruleId}/toggle`, {
+        method: 'PATCH',
+        forwardCookies: cookies,
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        return NextResponse.json(
+          { status: 'erro', mensagem: data?.mensagem ?? 'Erro ao alternar regra proativa' },
+          { status: res.status },
+        )
+      }
+      return NextResponse.json(data)
+    }
+
+    if (body._action === 'delete' && body.ruleId) {
+      const res = await backendFetch(`/admin/agendamento/proactive/rules/${body.ruleId}`, {
+        method: 'DELETE',
+        forwardCookies: cookies,
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        return NextResponse.json(
+          { status: 'erro', mensagem: data?.mensagem ?? 'Erro ao remover regra proativa' },
+          { status: res.status },
+        )
+      }
+      return NextResponse.json(data)
+    }
+
+    // Default: create new rule
     const res = await backendFetch('/admin/agendamento/proactive/rules', {
       method: 'POST',
       body: JSON.stringify(body),
-      forwardCookies: await getCookieHeader(request),
+      forwardCookies: cookies,
     })
     const data = await res.json()
 
