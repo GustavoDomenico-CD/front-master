@@ -29,6 +29,7 @@ import WhatsAppKPIsPanel from '@/app/shared/WhatsAppKPIsPanel';
 import WhatsAppChatPanel from '@/app/shared/WhatsAppChatPanel';
 import SuperadminUserCreator from '@/app/shared/SuperadminUserCreator';
 import ChatbotCadastroPanel from '@/app/shared/ChatbotCadastroPanel';
+import RoomRentalsPanel from '@/app/shared/RoomRentalsPanel';
 
 const PageWrapper = styled.div`
   max-width: 1280px;
@@ -116,6 +117,7 @@ const TABS: TabItem[] = [
   { id: 'agendamentos', label: 'Agendamentos' },
   { id: 'kpis', label: 'KPIs & Graficos' },
   { id: 'integracoes', label: 'Integracoes' },
+  { id: 'salas', label: 'Aluguel de salas', adminOnly: true },
   { id: 'chatbot', label: 'Chatbot' },
   { id: 'chatbot-cadastros', label: 'Cadastros chatbot', adminOnly: true },
   { id: 'whatsapp-chat', label: 'WhatsApp Chat', adminOnly: true },
@@ -279,6 +281,12 @@ export default function AppoimentsPanel() {
 
       {activeTab === 'integracoes' && (
         <IntegrationsStatus />
+      )}
+
+      {activeTab === 'salas' && (user?.role === 'admin' || user?.role === 'superadmin') && (
+        <Section $marginBottom={20}>
+          <RoomRentalsPanel />
+        </Section>
       )}
 
       {activeTab === 'chatbot' && (

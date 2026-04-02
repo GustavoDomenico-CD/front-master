@@ -216,6 +216,49 @@ const ObsItem = styled.li`
   line-height: 1.5;
 `;
 
+const ServicesTableWrap = styled.div`
+  margin-top: 24px;
+  border: 1px solid ${theme.colors.border};
+  border-radius: ${theme.radius.md};
+  overflow-x: auto;
+`;
+
+const ServicesTableTitle = styled.h3`
+  font-size: 15px;
+  color: #1e293b;
+  margin: 0 0 12px 0;
+`;
+
+const ServicesTable = styled.table`
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 640px;
+`;
+
+const ServicesTableHead = styled.thead`
+  background: #f8fafc;
+`;
+
+const ServicesTableRow = styled.tr`
+  border-bottom: 1px solid ${theme.colors.border};
+`;
+
+const ServicesTableHeader = styled.th`
+  text-align: left;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: #475569;
+  padding: 12px 14px;
+  text-transform: uppercase;
+`;
+
+const ServicesTableCell = styled.td`
+  font-size: 14px;
+  color: #334155;
+  padding: 12px 14px;
+`;
+
 // Tab configuration
 
 const TAB_CONFIG: Record<TabKey, { accent: string; badgeLabel: string }> = {
@@ -321,6 +364,40 @@ function MedicalRecordView({ medicalRecord }: { medicalRecord: PatientMedicalRec
   );
 }
 
+function CompletedServicesTable({ appointments }: { appointments: Appointment[] }) {
+  if (appointments.length === 0) return null;
+
+  return (
+    <div>
+      <ServicesTableTitle>Tabela de serviços realizados</ServicesTableTitle>
+      <ServicesTableWrap>
+        <ServicesTable>
+          <ServicesTableHead>
+            <ServicesTableRow>
+              <ServicesTableHeader>Data</ServicesTableHeader>
+              <ServicesTableHeader>Horário</ServicesTableHeader>
+              <ServicesTableHeader>Serviço</ServicesTableHeader>
+              <ServicesTableHeader>Profissional</ServicesTableHeader>
+              <ServicesTableHeader>Observações</ServicesTableHeader>
+            </ServicesTableRow>
+          </ServicesTableHead>
+          <tbody>
+            {appointments.map((appointment) => (
+              <ServicesTableRow key={`completed-table-${appointment.id}`}>
+                <ServicesTableCell>{formatDate(appointment.date)}</ServicesTableCell>
+                <ServicesTableCell>{appointment.time}</ServicesTableCell>
+                <ServicesTableCell>{appointment.specialty}</ServicesTableCell>
+                <ServicesTableCell>{appointment.doctor}</ServicesTableCell>
+                <ServicesTableCell>{appointment.notes || "—"}</ServicesTableCell>
+              </ServicesTableRow>
+            ))}
+          </tbody>
+        </ServicesTable>
+      </ServicesTableWrap>
+    </div>
+  );
+}
+
 // PatientTabs (main)
 export default function PatientTabs({ appointments, medicalRecord }: PatientTabsProps) {
   const [activeTab, setActiveTab] = useState<string>("scheduled");
@@ -358,13 +435,16 @@ export default function PatientTabs({ appointments, medicalRecord }: PatientTabs
           />
         )}
         {activeTab === "completed" && (
-          <AppointmentsList
-            appointments={completedAppointments}
-            emptyMessage="Nenhum atendimento concluído registrado."
-            accentColor={config.accent}
-            badgeColor={config.accent}
-            badgeLabel={config.badgeLabel}
-          />
+          <>
+            <AppointmentsList
+              appointments={completedAppointments}
+              emptyMessage="Nenhum atendimento concluído registrado."
+              accentColor={config.accent}
+              badgeColor={config.accent}
+              badgeLabel={config.badgeLabel}
+            />
+            <CompletedServicesTable appointments={completedAppointments} />
+          </>
         )}
         {activeTab === "canceled" && (
           <AppointmentsList

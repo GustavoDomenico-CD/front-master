@@ -251,6 +251,32 @@ const ChatHeaderPhone = styled.div`
   color: #6b7280;
 `
 
+const ChatActions = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+`
+
+const ClearChatButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background: #f8fafc;
+    border-color: #94a3b8;
+  }
+`
+
 const AgentToggleButton = styled.button<{ $enabled: boolean }>`
   display: inline-flex;
   align-items: center;
@@ -620,6 +646,7 @@ export default function WhatsAppChatPanel() {
   const [pendingImage, setPendingImage] = useState<File | null>(null)
   const imageInputRef = useRef<HTMLInputElement>(null)
   const [togglingAgent, setTogglingAgent] = useState(false)
+  const [hiddenConversationIds, setHiddenConversationIds] = useState<number[]>([])
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const pollRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -678,6 +705,10 @@ export default function WhatsAppChatPanel() {
   const sortedMessages = [...messages].sort(
     (a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime()
   )
+  const visibleMessages =
+    selectedContact && hiddenConversationIds.includes(selectedContact.id)
+      ? []
+      : sortedMessages
 
   // ─── Find last message for a contact ───
   const lastMessageMap = new Map<number, WhatsAppMessage>()
@@ -741,12 +772,20 @@ export default function WhatsAppChatPanel() {
   // ─── Select contact ───
   const handleSelectContact = (contact: WhatsAppContact) => {
     setSelectedContact(contact)
+    setHiddenConversationIds(prev => prev.filter(id => id !== contact.id))
+  }
+
+  const handleClearCurrentChat = () => {
+    if (!selectedContact) return
+    setHiddenConversationIds(prev =>
+      prev.includes(selectedContact.id) ? prev : [...prev, selectedContact.id]
+    )
   }
 
   // ─── Group messages by date ───
   const groupedMessages: { date: string; messages: WhatsAppMessage[] }[] = []
   let currentGroup: { date: string; messages: WhatsAppMessage[] } | null = null
-  for (const msg of sortedMessages) {
+  for (const msg of visibleMessages) {
     const key = formatDateKey(msg.sentAt)
     if (!currentGroup || currentGroup.date !== key) {
       currentGroup = { date: key, messages: [] }
@@ -839,15 +878,24 @@ export default function WhatsAppChatPanel() {
               <ChatHeaderName>{selectedContact.name}</ChatHeaderName>
               <ChatHeaderPhone>{selectedContact.phoneNumber}</ChatHeaderPhone>
             </ChatHeaderInfo>
-            <AgentToggleButton
-              $enabled={selectedContact.agentEnabled}
-              onClick={handleToggleAgent}
-              disabled={togglingAgent}
-              title={selectedContact.agentEnabled ? 'Clique para desativar o agente neste contato' : 'Clique para ativar o agente neste contato'}
-            >
-              <AgentDot $enabled={selectedContact.agentEnabled} />
-              {togglingAgent ? 'Alterando...' : selectedContact.agentEnabled ? 'Agente Ativo' : 'Agente Inativo'}
-            </AgentToggleButton>
+            <ChatActions>
+              <ClearChatButton
+                type="button"
+                title="Limpa somente esta aba de conversa na tela atual"
+                onClick={handleClearCurrentChat}
+              >
+                Limpar aba
+              </ClearChatButton>
+              <AgentToggleButton
+                $enabled={selectedContact.agentEnabled}
+                onClick={handleToggleAgent}
+                disabled={togglingAgent}
+                title={selectedContact.agentEnabled ? 'Clique para desativar o agente neste contato' : 'Clique para ativar o agente neste contato'}
+              >
+                <AgentDot $enabled={selectedContact.agentEnabled} />
+                {togglingAgent ? 'Alterando...' : selectedContact.agentEnabled ? 'Agente Ativo' : 'Agente Inativo'}
+              </AgentToggleButton>
+            </ChatActions>
           </ChatHeader>
 
           {msgsError && (
@@ -860,12 +908,16 @@ export default function WhatsAppChatPanel() {
           )}
 
           <MessagesContainer>
-            {msgsLoading && sortedMessages.length === 0 && (
+            {msgsLoading && visibleMessages.length === 0 && (
               <LoadingOverlay>Carregando mensagens...</LoadingOverlay>
             )}
 
-            {!msgsLoading && sortedMessages.length === 0 && (
-              <LoadingOverlay>Nenhuma mensagem nesta conversa</LoadingOverlay>
+            {!msgsLoading && visibleMessages.length === 0 && (
+              <LoadingOverlay>
+                {selectedContact && hiddenConversationIds.includes(selectedContact.id)
+                  ? 'Conversa limpa nesta aba. Reabra o contato para visualizar novamente.'
+                  : 'Nenhuma mensagem nesta conversa'}
+              </LoadingOverlay>
             )}
 
             {groupedMessages.map(group => (

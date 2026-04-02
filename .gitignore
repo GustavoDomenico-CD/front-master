@@ -43,3 +43,6 @@ next-env.d.ts
 
 # clone local de referência do backend (opcional)
 .backend-ref/
+
+# dados locais do painel (aluguel de salas)
+/data/room-rentals.json

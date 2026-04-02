@@ -4,6 +4,7 @@
  */
 
 import type { Appointment, ChartsResponse, Filters } from '@/app/types/Appoiments'
+import type { RoomBillingDisplay, RoomDefinition, RoomLease, RoomRentalsPayload } from '@/app/types/room-rentals'
 import type { KpisResponse } from '@/app/types/kpi'
 
 export interface LoginCredentials {
@@ -249,3 +250,80 @@ export async function postLogin(credentials: LoginCredentials): Promise<LoginApi
   }
   return data
 }
+
+export async function fetchRoomRentals(): Promise<RoomRentalsPayload> {
+  const res = await apiRequest('/api/admin/room-rentals', { cache: 'no-store' })
+  const data = (await res.json().catch(() => ({}))) as { error?: string; data?: RoomRentalsPayload }
+  if (!res.ok || !data.data) {
+    throw new Error(data.error ?? 'Erro ao carregar aluguel de salas.')
+  }
+  return data.data
+}
+
+export async function createRoomDefinition(body: Omit<RoomDefinition, 'id'>): Promise<RoomDefinition> {
+  const res = await apiRequest('/api/admin/room-rentals', {
+    method: 'POST',
+    body: JSON.stringify({
+      kind: 'room',
+      ...body,
+    }),
+  })
+  const data = (await res.json().catch(() => ({}))) as { error?: string; data?: RoomDefinition }
+  if (!res.ok || !data.data) throw new Error(data.error ?? 'Erro ao criar sala.')
+  return data.data
+}
+
+export async function createRoomLease(body: Omit<RoomLease, 'id'>): Promise<RoomLease> {
+  const res = await apiRequest('/api/admin/room-rentals', {
+    method: 'POST',
+    body: JSON.stringify({
+      kind: 'lease',
+      ...body,
+    }),
+  })
+  const data = (await res.json().catch(() => ({}))) as { error?: string; data?: RoomLease }
+  if (!res.ok || !data.data) throw new Error(data.error ?? 'Erro ao registrar locação.')
+  return data.data
+}
+
+export async function updateRoomDefinition(id: string, patch: Partial<RoomDefinition>): Promise<RoomDefinition> {
+  const res = await apiRequest(`/api/admin/room-rentals/${encodeURIComponent(id)}?kind=room`, {
+    method: 'PUT',
+    body: JSON.stringify(patch),
+  })
+  const data = (await res.json().catch(() => ({}))) as { error?: string; data?: RoomDefinition }
+  if (!res.ok || !data.data) throw new Error(data.error ?? 'Erro ao atualizar sala.')
+  return data.data
+}
+
+export async function updateRoomLease(id: string, patch: Partial<RoomLease>): Promise<RoomLease> {
+  const res = await apiRequest(`/api/admin/room-rentals/${encodeURIComponent(id)}?kind=lease`, {
+    method: 'PUT',
+    body: JSON.stringify(patch),
+  })
+  const data = (await res.json().catch(() => ({}))) as { error?: string; data?: RoomLease }
+  if (!res.ok || !data.data) throw new Error(data.error ?? 'Erro ao atualizar locação.')
+  return data.data
+}
+
+export async function deleteRoomDefinition(id: string): Promise<void> {
+  const res = await apiRequest(`/api/admin/room-rentals/${encodeURIComponent(id)}?kind=room`, {
+    method: 'DELETE',
+  })
+  if (!res.ok) {
+    const data = (await res.json().catch(() => ({}))) as { error?: string }
+    throw new Error(data.error ?? 'Erro ao excluir sala.')
+  }
+}
+
+export async function deleteRoomLease(id: string): Promise<void> {
+  const res = await apiRequest(`/api/admin/room-rentals/${encodeURIComponent(id)}?kind=lease`, {
+    method: 'DELETE',
+  })
+  if (!res.ok) {
+    const data = (await res.json().catch(() => ({}))) as { error?: string }
+    throw new Error(data.error ?? 'Erro ao excluir locação.')
+  }
+}
+
+export type { RoomBillingDisplay, RoomDefinition, RoomLease, RoomRentalsPayload }
