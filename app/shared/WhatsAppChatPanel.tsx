@@ -355,6 +355,14 @@ const DateSeparator = styled.div`
   box-shadow: 0 1px 1px rgba(0, 0, 0, 0.06);
 `
 
+/** Grupo por dia: precisa ser flex column para align-self das bolhas (agente direita / paciente esquerda). */
+const MessageDayGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+`
+
 const MessageBubble = styled.div<{ $outbound: boolean }>`
   max-width: 65%;
   padding: 8px 12px;
@@ -364,6 +372,7 @@ const MessageBubble = styled.div<{ $outbound: boolean }>`
   color: #1f2937;
   position: relative;
   word-wrap: break-word;
+  /* outbound = enviada pelo número conectado (agente) → direita; inbound = paciente → esquerda */
   align-self: ${p => (p.$outbound ? 'flex-end' : 'flex-start')};
   background: ${p => (p.$outbound ? '#d9fdd3' : '#ffffff')};
   box-shadow: 0 1px 1px rgba(0, 0, 0, 0.06);
@@ -921,14 +930,14 @@ export default function WhatsAppChatPanel() {
             )}
 
             {groupedMessages.map(group => (
-              <div key={group.date}>
+              <MessageDayGroup key={group.date}>
                 <DateSeparator>{formatDate(group.messages[0].sentAt)}</DateSeparator>
                 {group.messages.map(msg => {
-                  const outbound = msg.direction === 'outbound'
+                  const isAgent = msg.direction === 'outbound'
                   return (
-                    <MessageBubble key={msg.id} $outbound={outbound}>
-                      <MessageOriginLabel $outbound={outbound}>
-                        {outbound ? 'Agente' : selectedContact.name}
+                    <MessageBubble key={msg.id} $outbound={isAgent}>
+                      <MessageOriginLabel $outbound={isAgent}>
+                        {isAgent ? 'Agente' : selectedContact.name}
                       </MessageOriginLabel>
 
                       {msg.type !== 'text' && (
@@ -940,9 +949,9 @@ export default function WhatsAppChatPanel() {
 
                       <MessageText>{msg.content || '(sem conteudo)'}</MessageText>
 
-                      <MessageFooter $outbound={outbound}>
+                      <MessageFooter $outbound={isAgent}>
                         <MessageTime>{formatTime(msg.sentAt)}</MessageTime>
-                        {outbound && (
+                        {isAgent && (
                           <MessageCheck $status={msg.status}>
                             {statusIcon(msg.status)}
                           </MessageCheck>
@@ -951,7 +960,7 @@ export default function WhatsAppChatPanel() {
                     </MessageBubble>
                   )
                 })}
-              </div>
+              </MessageDayGroup>
             ))}
             <div ref={messagesEndRef} />
           </MessagesContainer>

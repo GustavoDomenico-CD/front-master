@@ -1,5 +1,58 @@
 import { NextResponse } from 'next/server'
-import { backendFetch } from '@/app/lib/backend-server'
+import { backendFetch, getCookieHeader } from '@/app/lib/backend-server'
+
+function normalizeWhatsAppPhone(input: string | undefined): string | null {
+  if (!input?.trim()) return null
+  const d = input.replace(/\D/g, '')
+  if (d.length < 10) return null
+  if (d.startsWith('55') && d.length >= 12) return d
+  return `55${d}`
+}
+
+/**
+ * Cria/atualiza contato na lista do WhatsApp (mesmo endpoint do painel).
+ * Cadastro no chatbot costuma ser anônimo: use `WHATSAPP_CONTACT_SYNC_BEARER_TOKEN` (JWT admin no Nest)
+ * ou realize o cadastro com uma sessão admin já autenticada (cookie access_token).
+ */
+async function upsertWhatsAppContactAfterCadastro(
+  request: Request,
+  name: string | undefined,
+  phone: string | undefined,
+): Promise<void> {
+  const phoneNumber = normalizeWhatsAppPhone(phone)
+  if (!phoneNumber) return
+
+  const displayName = (name ?? 'Paciente').trim() || 'Paciente'
+  const serviceToken = process.env.WHATSAPP_CONTACT_SYNC_BEARER_TOKEN?.trim()
+  const cookies = await getCookieHeader(request)
+
+  const headers = new Headers()
+  if (serviceToken) headers.set('Authorization', `Bearer ${serviceToken}`)
+
+  const forwardCookies = serviceToken ? undefined : cookies ?? undefined
+
+  try {
+    const syncRes = await backendFetch('/admin/whatsapp/contacts', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        phoneNumber,
+        name: displayName,
+      }),
+      forwardCookies: forwardCookies ?? undefined,
+    })
+    if (!syncRes.ok) {
+      const errText = await syncRes.text().catch(() => '')
+      console.warn(
+        '[chatbot/cadastro] Sync WhatsApp contatos HTTP',
+        syncRes.status,
+        errText.slice(0, 240),
+      )
+    }
+  } catch (e) {
+    console.warn('[chatbot/cadastro] Sync WhatsApp contatos:', e)
+  }
+}
 
 /**
  * Cadastro de paciente via chatbot → Nest POST /chatbot/cadastro (payload enxuto, persiste em ChatbotCadastro).
@@ -47,6 +100,12 @@ export async function POST(request: Request) {
         { status: res.status >= 400 && res.status < 600 ? res.status : 400 }
       )
     }
+
+    await upsertWhatsAppContactAfterCadastro(
+      request,
+      typeof body.name === 'string' ? body.name : undefined,
+      typeof body.phone === 'string' ? body.phone : undefined,
+    )
 
     return NextResponse.json({
       success: true,
