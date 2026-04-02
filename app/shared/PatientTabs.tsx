@@ -5,6 +5,21 @@ import { useState } from "react";
 import DashboardTabs, { TabItem } from "./DashboardTabs";
 import { theme } from "@/app/styles/theme";
 import { Appointment, PatientMedicalRecord } from "@/app/types/patient";
+import { 
+  Calendar, 
+  CheckCircle, 
+  XCircle,
+  FileText,
+  AlertTriangle,
+  Pill,
+  ClipboardList,
+  Stethoscope,
+  User,
+  MessageCircle,
+  Clock,
+  ClipboardMinus
+
+} from "lucide-react";
 
 type PatientTabsProps = {
   appointments: Appointment[];
@@ -153,6 +168,9 @@ const MedicalRecordCardTitle = styled.h3`
   font-weight: 700;
   color: #1e293b;
   margin: 0 0 10px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 `;
 
 const MedicalRecordText = styled.p`
@@ -285,7 +303,7 @@ function AppointmentsList({
   if (appointments.length === 0) {
     return (
       <EmptyState>
-        <EmptyIcon>📋</EmptyIcon>
+        <EmptyIcon><ClipboardMinus /></EmptyIcon>
         <EmptyText>{emptyMessage}</EmptyText>
       </EmptyState>
     );
@@ -298,14 +316,14 @@ function AppointmentsList({
           <ListItemTop>
             <ListItemInfo>
               <AppointmentDate>
-                📅 {formatDate(appointment.date)} às {appointment.time}
+                <Calendar /> {formatDate(appointment.date)} às {appointment.time}
               </AppointmentDate>
-              <AppointmentDoctor>👨‍⚕️ {appointment.doctor}</AppointmentDoctor>
+              <AppointmentDoctor> <User /> {appointment.doctor}</AppointmentDoctor>
               <AppointmentSpecialty>{appointment.specialty}</AppointmentSpecialty>
             </ListItemInfo>
             <BadgeTag $color={badgeColor}>{badgeLabel}</BadgeTag>
           </ListItemTop>
-          {appointment.notes && <AppointmentNotes>💬 {appointment.notes}</AppointmentNotes>}
+          {appointment.notes && <AppointmentNotes> <MessageCircle /> {appointment.notes}</AppointmentNotes>}
         </ListItem>
       ))}
     </List>
@@ -316,13 +334,13 @@ function MedicalRecordView({ medicalRecord }: { medicalRecord: PatientMedicalRec
   return (
     <MedicalRecordContainer>
       <MedicalRecordCard>
-        <MedicalRecordCardTitle>📝 Resumo</MedicalRecordCardTitle>
+        <MedicalRecordCardTitle> <Stethoscope /> Resumo</MedicalRecordCardTitle>
         <MedicalRecordText>{medicalRecord.summary}</MedicalRecordText>
       </MedicalRecordCard>
 
       <MedicalRecordGrid>
         <MedicalRecordCard>
-          <MedicalRecordCardTitle>⚠️ Alergias</MedicalRecordCardTitle>
+          <MedicalRecordCardTitle> <AlertTriangle /> Alergias</MedicalRecordCardTitle>
           {medicalRecord.allergies.length === 0 ? (
             <MedicalRecordMuted>Nenhuma alergia registrada.</MedicalRecordMuted>
           ) : (
@@ -333,7 +351,7 @@ function MedicalRecordView({ medicalRecord }: { medicalRecord: PatientMedicalRec
         </MedicalRecordCard>
 
         <MedicalRecordCard>
-          <MedicalRecordCardTitle>💊 Medicamentos</MedicalRecordCardTitle>
+          <MedicalRecordCardTitle> <Pill /> Medicamentos</MedicalRecordCardTitle>
           {medicalRecord.medications.length === 0 ? (
             <MedicalRecordMuted>Nenhum medicamento registrado.</MedicalRecordMuted>
           ) : (
@@ -345,7 +363,7 @@ function MedicalRecordView({ medicalRecord }: { medicalRecord: PatientMedicalRec
       </MedicalRecordGrid>
 
       <MedicalRecordCard>
-        <MedicalRecordCardTitle>🗒️ Observações</MedicalRecordCardTitle>
+        <MedicalRecordCardTitle> <ClipboardList /> Observações</MedicalRecordCardTitle>
         {medicalRecord.notes.length === 0 ? (
           <MedicalRecordMuted>Nenhuma observação registrada.</MedicalRecordMuted>
         ) : (
@@ -408,10 +426,10 @@ export default function PatientTabs({ appointments, medicalRecord }: PatientTabs
 
   
   const TABS: TabItem[] = [
-    { id: 'scheduled', label: `🗓️ Agendados (${scheduledAppointments.length})` },
-    { id: 'completed', label: `✅ Concluídos (${completedAppointments.length})` },
-    { id: 'canceled', label: `❌ Cancelados (${canceledAppointments.length})` },
-    { id: 'medicalRecord', label: '📁 Meu acompanhamento' },
+    { id: 'scheduled', icon: Calendar, label: `Agendados (${scheduledAppointments.length})` },
+    { id: 'completed', icon: CheckCircle, label: `Concluídos (${completedAppointments.length})` },
+    { id: 'canceled', icon: XCircle, label: `Cancelados (${canceledAppointments.length})` },
+    { id: 'medicalRecord', icon: FileText, label: ' Meu acompanhamento' },
   ];
 
   const config = TAB_CONFIG[activeTab as TabKey] ?? TAB_CONFIG.scheduled;

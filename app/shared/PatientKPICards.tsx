@@ -3,6 +3,7 @@
 import styled from "styled-components";
 import { PatientDashboardData } from "@/app/types/patient";
 import { theme } from "@/app/styles/theme";
+import { Calendar, CheckCircle, XCircle } from "lucide-react";
 
 interface PatientKPICardsProps {
   patient: PatientDashboardData;
@@ -61,21 +62,21 @@ export default function PatientKPICards({ patient }: PatientKPICardsProps) {
   return (
     <CardsGrid>
       <Card>
-        <IconWrapper>🗓️</IconWrapper>
+        <IconWrapper><Calendar /></IconWrapper>
         <Title>Agendados</Title>
         <Value $color={theme.colors.primary}>{patient.scheduledAppointments}</Value>
         <Subtitle>Consultas agendadas</Subtitle>
       </Card>
 
       <Card>
-        <IconWrapper>✅</IconWrapper>
+        <IconWrapper><CheckCircle /></IconWrapper>
         <Title>Concluídos</Title>
         <Value $color={theme.colors.success}>{patient.completedAppointments}</Value>
         <Subtitle>Atendimentos já realizados</Subtitle>
       </Card>
 
       <Card>
-        <IconWrapper>❌</IconWrapper>
+        <IconWrapper><XCircle /></IconWrapper>
         <Title>Cancelados</Title>
         <Value $color={theme.colors.danger}>{patient.canceledAppointments}</Value>
         <Subtitle>Agendamentos cancelados</Subtitle>

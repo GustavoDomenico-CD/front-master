@@ -1,5 +1,15 @@
 import styled from 'styled-components';
 import { KPI } from '../types/kpi';
+import { 
+  Calendar,
+  DollarSign,
+  Hourglass,
+  TrendingUp,
+  Mail,
+  UserX,
+  Target,
+  XCircle
+} from 'lucide-react';  
 
 const CardsGrid = styled.div`
   display: grid;
@@ -43,7 +53,7 @@ const Subtitle = styled.div`
 `;
 
 const IconWrapper = styled.div`
-  font-size: 32px;
+  font-size: 40px;
   margin-bottom: 12px;
   opacity: 0.8;
 `;
@@ -88,56 +98,56 @@ export default function KPICards({ kpis, loading = false }: KPICardsProps) {
   return (
     <CardsGrid>
       <Card>
-        <IconWrapper>📅</IconWrapper>
+        <IconWrapper><Calendar /></IconWrapper>
         <Title>Total Agendamentos</Title>
         <Value>{kpis.total_appointments.toLocaleString('pt-BR')}</Value>
         <Subtitle>período selecionado</Subtitle>
       </Card>
 
       <Card>
-        <IconWrapper>💰</IconWrapper>
+        <IconWrapper><DollarSign /></IconWrapper>
         <Title>Receita Total</Title>
         <Value color="#10b981">{formatCurrency(kpis.total_revenue)}</Value>
         <Subtitle>valor bruto</Subtitle>
       </Card>
 
       <Card>
-        <IconWrapper>⏳</IconWrapper>
+        <IconWrapper><Hourglass />  </IconWrapper>
         <Title>Receita Pendente</Title>
         <Value color="#f59e0b">{formatCurrency(kpis.pending_revenue)}</Value>
         <Subtitle>aguardando pagamento</Subtitle>
       </Card>
 
       <Card>
-        <IconWrapper>📈</IconWrapper>
+        <IconWrapper><TrendingUp /></IconWrapper>
         <Title>Taxa de Conversão</Title>
         <Value color="#3b82f6">{formatPercent(kpis.conversion_rate)}</Value>
         <Subtitle>leads → agendamentos</Subtitle>
       </Card>
 
       <Card>
-        <IconWrapper>📧</IconWrapper>
+        <IconWrapper><Mail /></IconWrapper>
         <Title>Emails Enviados</Title>
         <Value>{kpis.emails_send.toLocaleString('pt-BR')}</Value>
         <Subtitle>total no período</Subtitle>
       </Card>
 
       <Card>
-        <IconWrapper>🚪</IconWrapper>
+        <IconWrapper><UserX /></IconWrapper>
         <Title>Taxa de Abandono</Title>
         <Value color="#ef4444">{formatPercent(kpis.showOffRate)}</Value>
         <Subtitle>agendamentos não confirmados</Subtitle>
       </Card>
 
       <Card>
-        <IconWrapper>🎯</IconWrapper>
+        <IconWrapper><Target /></IconWrapper>
         <Title>Ticket Médio</Title>
         <Value color="#8b5cf6">{formatCurrency(kpis.medium_ticket_value)}</Value>
         <Subtitle>valor médio por agendamento</Subtitle>
       </Card>
 
       <Card>
-        <IconWrapper>❌</IconWrapper>
+        <IconWrapper><XCircle /></IconWrapper>
         <Title>Cancelamentos</Title>
         <Value color="#991b1b">{kpis.cancellations.toLocaleString('pt-BR')}</Value>
         <Subtitle>total no período</Subtitle>

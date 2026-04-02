@@ -2,11 +2,14 @@
 
 import { useEffect, useMemo, useRef } from 'react'
 import styled from 'styled-components'
+import { LucideIcon } from 'lucide-react'
 
 export interface TabItem {
   id: string
   label: string
   adminOnly?: boolean
+  icon?: LucideIcon
+
 }
 
 interface DashboardTabsProps {
@@ -36,6 +39,9 @@ const TabsContainer = styled.nav`
 `
 
 const TabButton = styled.button<{ $active: boolean }>`
+  display: flex;
+  align-items: center;
+  gap: 8px;
   padding: 10px 20px;
   border: none;
   border-radius: 8px;
@@ -97,18 +103,22 @@ export default function DashboardTabs({ tabs, activeTab, onTabChange, userRole }
   }
 
   return (
-    <TabsContainer ref={containerRef} onWheel={handleWheel}>
-      {visibleTabs.map(tab => (
+  <TabsContainer ref={containerRef} onWheel={handleWheel}>
+    {visibleTabs.map(tab => {
+      const Icon = tab.icon;
+      return (
         <TabButton
           key={tab.id}
           $active={activeTab === tab.id}
           onClick={() => onTabChange(tab.id)}
           data-tab-id={tab.id}
         >
-          {tab.label}
+          {Icon && <Icon size={18} strokeWidth={2.5} />}
+          <span>{tab.label}</span>
           {tab.adminOnly && <AdminBadge>Admin</AdminBadge>}
         </TabButton>
-      ))}
-    </TabsContainer>
-  )
+      );
+    })}
+  </TabsContainer>
+)
 }
