@@ -1194,7 +1194,7 @@ export default function ChatManager({ apiBaseUrl = '', userId, principal: _princ
 
       {showPatientRegistration && (
         <RegistrationPanel>
-          <PanelTitle>Cadastro de Paciente</PanelTitle>
+          <PanelTitle>Cadastro</PanelTitle>
 
           {patientError && (
             <ErrorText>
