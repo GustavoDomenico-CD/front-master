@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import styled from 'styled-components';
 import { useIntegrationsStatus } from './../hooks/useIntegrationStatus'
 import { fetchAppointmentsList } from '@/app/lib/backend'
 import type { Appointment } from '@/app/types/Appoiments'
 import { sendWhatsAppText, fetchWhatsAppStatus } from '@/app/lib/whatsapp-api'
+import { fetchGoogleCalendarViaServerApi, type GoogleCalendarEvent } from '@/app/lib/google-calendar'
 
 const StatusContainer = styled.div`
   background: white;
@@ -100,6 +101,31 @@ const SuccessMessage = styled.div`
   line-height: 1.4;
 `
 
+const GoogleActionsRow = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin: 8px 0 14px;
+`
+
+const SecondaryButton = styled.button<{ $loading?: boolean }>`
+  padding: 8px 12px;
+  font-size: 13px;
+  background: #111827;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: ${p => p.$loading ? 'not-allowed' : 'pointer'};
+  opacity: ${p => p.$loading ? 0.75 : 1};
+`
+
+const SmallHint = styled.div`
+  font-size: 12px;
+  color: #6b7280;
+  line-height: 1.35;
+`
+
 const HeaderRow = styled.div`
   display: flex;
   justify-content: space-between;
@@ -179,37 +205,6 @@ const ReminderButton = styled.button<{ $enabled: boolean }>`
   margin-bottom: 12px;
   background: ${p => (p.$enabled ? '#dcfce7' : '#fee2e2')};
   color: ${p => (p.$enabled ? '#166534' : '#991b1b')};
-`
-
-const TableWrap = styled.div`
-  overflow-x: auto;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  background: white;
-`
-
-const Table = styled.table`
-  width: 100%;
-  min-width: 760px;
-  border-collapse: collapse;
-`
-
-const Th = styled.th`
-  text-align: left;
-  font-size: 12px;
-  color: #475569;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  background: #f8fafc;
-  padding: 10px 12px;
-  border-bottom: 1px solid #e5e7eb;
-`
-
-const Td = styled.td`
-  font-size: 13px;
-  color: #1f2937;
-  padding: 10px 12px;
-  border-bottom: 1px solid #f1f5f9;
 `
 
 const EmptyState = styled.div`
@@ -351,6 +346,17 @@ function persistSentReminders(sent: Set<string>) {
   window.localStorage.setItem(REMINDER_STORAGE_KEY, JSON.stringify(Array.from(sent)))
 }
 
+function formatEventLabel(ev: GoogleCalendarEvent): string {
+  if (ev.allDay) return `Dia todo: ${ev.summary}`
+  const hh = String(ev.start.getHours()).padStart(2, '0')
+  const mm = String(ev.start.getMinutes()).padStart(2, '0')
+  return `${hh}:${mm} ${ev.summary}`
+}
+
+function localDateKey(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
 export default function IntegrationsStatus(){
   const { status, loading, error, refetch, isPolling, togglePolling } = useIntegrationsStatus({
     autoFetch: true,
@@ -361,6 +367,10 @@ export default function IntegrationsStatus(){
   const [calendarError, setCalendarError] = useState<string | null>(null)
   const [reminderEnabled, setReminderEnabled] = useState(true)
   const [reminderLog, setReminderLog] = useState<string | null>(null)
+  const [googleEventsLoading, setGoogleEventsLoading] = useState(false)
+  const [googleEventsError, setGoogleEventsError] = useState<string | null>(null)
+  const [googleEvents, setGoogleEvents] = useState<GoogleCalendarEvent[]>([])
+  const [googleCalendarIdLabel, setGoogleCalendarIdLabel] = useState('primary')
   const [calendarMonth, setCalendarMonth] = useState(() => {
     const d = new Date()
     return new Date(d.getFullYear(), d.getMonth(), 1)
@@ -452,6 +462,37 @@ export default function IntegrationsStatus(){
     {name: 'Gmail', key: 'gmail' as const}
   ]
 
+  const googleMonthRange = useMemo(() => {
+    const start = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1)
+    start.setHours(0, 0, 0, 0)
+    const end = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1)
+    end.setHours(0, 0, 0, 0)
+    return { start, end }
+  }, [calendarMonth])
+
+  const loadGoogleEvents = useCallback(async () => {
+    setGoogleEventsLoading(true)
+    setGoogleEventsError(null)
+    try {
+      const { events, calendarId } = await fetchGoogleCalendarViaServerApi(
+        googleMonthRange.start,
+        googleMonthRange.end
+      )
+      setGoogleEvents(events)
+      setGoogleCalendarIdLabel(calendarId)
+    } catch (err: unknown) {
+      setGoogleEventsError(
+        err instanceof Error ? err.message : 'Falha ao carregar eventos do Google Calendar.'
+      )
+    } finally {
+      setGoogleEventsLoading(false)
+    }
+  }, [googleMonthRange.start, googleMonthRange.end])
+
+  useEffect(() => {
+    loadGoogleEvents()
+  }, [loadGoogleEvents])
+
   const calendarStart = useMemo(() => {
     const first = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1)
     const weekday = first.getDay()
@@ -477,7 +518,7 @@ export default function IntegrationsStatus(){
     for (const ap of appointments) {
       const when = buildAppointmentDate(ap)
       if (!when) continue
-      const key = when.toISOString().slice(0, 10)
+      const key = localDateKey(when)
       const list = map.get(key) ?? []
       list.push({
         hour: Number(ap.hour) || 0,
@@ -491,6 +532,24 @@ export default function IntegrationsStatus(){
     }
     return map
   }, [appointments])
+
+  const googleEventsByDay = useMemo(() => {
+    const map = new Map<string, { hour: number; label: string }[]>()
+    for (const ev of googleEvents) {
+      const key = localDateKey(ev.start)
+      const list = map.get(key) ?? []
+      list.push({
+        hour: ev.allDay ? -1 : ev.start.getHours() * 60 + ev.start.getMinutes(),
+        label: formatEventLabel(ev),
+      })
+      map.set(key, list)
+    }
+    for (const [k, list] of map.entries()) {
+      list.sort((a, b) => a.hour - b.hour)
+      map.set(k, list)
+    }
+    return map
+  }, [googleEvents])
 
   const monthTitle = useMemo(() => {
     return calendarMonth.toLocaleString('pt-BR', { month: 'long', year: 'numeric' })
@@ -534,9 +593,10 @@ export default function IntegrationsStatus(){
       )}
 
       <CalendarCard>
-        <CalendarTitle>Google Calendar - consultas sincronizadas</CalendarTitle>
+        <CalendarTitle>Google Calendar - agendamentos</CalendarTitle>
         <CalendarDescription>
-          As consultas agendadas aparecem abaixo. Quando estiverem próximas, o sistema envia lembrete automático via WhatsApp.
+          Os eventos são lidos no servidor com a <b>service account</b> (JSON). Para ver o calendário de um usuário,
+          compartilhe esse calendário com o e-mail da service account no Google Calendar (permissão de leitura).
         </CalendarDescription>
 
         <CalendarMeta>
@@ -545,6 +605,24 @@ export default function IntegrationsStatus(){
           <Pill>Calendar: {status.calendar}</Pill>
           <Pill>Atualização: a cada 1 min</Pill>
         </CalendarMeta>
+
+        <GoogleActionsRow>
+          <SecondaryButton
+            type="button"
+            $loading={googleEventsLoading}
+            onClick={loadGoogleEvents}
+            disabled={googleEventsLoading}
+          >
+            {googleEventsLoading ? 'Carregando...' : 'Atualizar eventos'}
+          </SecondaryButton>
+          <SmallHint>
+            Calendário <b>{googleCalendarIdLabel}</b> — {googleEvents.length} evento(s) neste mês.
+            Configure <code>GOOGLE_SERVICE_ACCOUNT_JSON_PATH</code> no <code>.env.local</code> (não use{' '}
+            <code>NEXT_PUBLIC_GOOGLE_CLIENT_ID</code> com o JSON da service account).
+          </SmallHint>
+        </GoogleActionsRow>
+
+        {googleEventsError && <ErrorMessage>{googleEventsError}</ErrorMessage>}
 
         <ReminderButton
           type="button"
@@ -572,10 +650,14 @@ export default function IntegrationsStatus(){
           )
         )}
 
-        {upcomingAppointments.length === 0 ? (
-          <EmptyState>Nenhuma consulta futura encontrada para sincronizar.</EmptyState>
-        ) : (
-          <>
+        {upcomingAppointments.length === 0 && googleEvents.length === 0 && (
+          <EmptyState>
+            Nenhum evento no Google Calendar neste mês e nenhuma consulta futura no sistema (ou credenciais
+            ainda não configuradas no servidor).
+          </EmptyState>
+        )}
+
+        <>
             <CalendarHeader>
               <MonthTitle>{monthTitle}</MonthTitle>
               <MonthActions>
@@ -615,8 +697,10 @@ export default function IntegrationsStatus(){
 
             <CalendarGrid>
               {calendarCells.map((cellDate) => {
-                const key = cellDate.toISOString().slice(0, 10)
-                const events = eventsByDay.get(key) ?? []
+                const key = localDateKey(cellDate)
+                const backendEvents = eventsByDay.get(key) ?? []
+                const gEvents = googleEventsByDay.get(key) ?? []
+                const events = [...gEvents, ...backendEvents]
                 const isCurrentMonth = cellDate.getMonth() === calendarMonth.getMonth()
                 const today = new Date()
                 const isToday =
@@ -640,8 +724,7 @@ export default function IntegrationsStatus(){
                 )
               })}
             </CalendarGrid>
-          </>
-        )}
+        </>
       </CalendarCard>
     </StatusContainer>
   )
