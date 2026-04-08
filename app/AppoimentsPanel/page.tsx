@@ -19,7 +19,7 @@ import { usePagination } from '@/app/hooks/usePagination';
 import GraficosDashboard from '@/app/shared/GraphsDashboard';
 import EditarAgendamentoModal from '@/app/shared/AppoimentsEditModal';
 import { postLogout } from '@/app/lib/backend';
-import DashboardTabs from '@/app/shared/DashboardTabs';
+import DashboardTabs, { SIDEBAR_COLLAPSED } from '@/app/shared/DashboardTabs';
 import type { TabItem } from '@/app/shared/DashboardTabs';
 import WhatsAppConfigPanel from '@/app/shared/WhatsAppConfigPanel';
 import WhatsAppMessagesPanel from '@/app/shared/WhatsAppMessagesPanel';
@@ -31,10 +31,19 @@ import SuperadminUserCreator from '@/app/shared/SuperadminUserCreator';
 import ChatbotCadastroPanel from '@/app/shared/ChatbotCadastroPanel';
 import RoomRentalsPanel from '@/app/shared/RoomRentalsPanel';
 
+// Offset main content so it doesn't hide behind the collapsed sidebar
 const PageWrapper = styled.div`
+  margin-left: ${SIDEBAR_COLLAPSED};
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  padding: 24px 24px 24px 32px;
+  transition: margin-left 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+`
+
+const PageInner = styled.div`
+  width: 100%;
   max-width: 1280px;
-  margin: 0 auto;
-  padding: 24px 16px;
 `
 
 const PageHeader = styled.header`
@@ -192,31 +201,7 @@ export default function AppoimentsPanel() {
   if (sessionLoading) return <LoadingSpinner fullScreen />;
 
   return (
-    <PageWrapper>
-      <PageHeader>
-        <div>
-          <PageTitle>
-            Ola, {displayName}
-          </PageTitle>
-          {user?.role && (
-            <RoleBadge $isAdmin={user.role === 'admin' || user.role === 'superadmin'}>
-              {user.role.toUpperCase()}
-            </RoleBadge>
-          )}
-        </div>
-        <LogoutButton onClick={handleLogout}>
-          Sair
-        </LogoutButton>
-      </PageHeader>
-
-      {statusMessage && (
-        <StatusMessage
-          type={statusMessage.type}
-          message={statusMessage.message}
-          onClose={() => setStatusMessage(null)}
-        />
-      )}
-
+    <>
       <DashboardTabs
         tabs={TABS}
         activeTab={activeTab}
@@ -224,111 +209,139 @@ export default function AppoimentsPanel() {
         userRole={user?.role}
       />
 
-      {activeTab === 'agendamentos' && (
-        <>
+      <PageWrapper>
+        <PageInner>
+        <PageHeader>
+          <div>
+            <PageTitle>
+              Ola, {displayName}
+            </PageTitle>
+            {user?.role && (
+              <RoleBadge $isAdmin={user.role === 'admin' || user.role === 'superadmin'}>
+                {user.role.toUpperCase()}
+              </RoleBadge>
+            )}
+          </div>
+          <LogoutButton onClick={handleLogout}>
+            Sair
+          </LogoutButton>
+        </PageHeader>
+
+        {statusMessage && (
+          <StatusMessage
+            type={statusMessage.type}
+            message={statusMessage.message}
+            onClose={() => setStatusMessage(null)}
+          />
+        )}
+
+        {activeTab === 'agendamentos' && (
+          <>
+            <Section $marginBottom={20}>
+              <AppoimentsFilters onApply={handleApplyFilters} />
+            </Section>
+
+            <section>
+              {loading && <LoadingSpinner />}
+
+              <AppoimentsTable
+                agendamentos={appoiments}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+              />
+
+              <Pagination
+                currentPage={pagination.currentPage}
+                totalPages={pagination.totalPages}
+                onPageChange={goToPage}
+              />
+            </section>
+
+            {modalOpen && agendamentoEdit && (
+              <EditarAgendamentoModal
+                agendamento={agendamentoEdit}
+                onClose={() => {
+                  setModalOpen(false);
+                  setAgendamentoEdit(null);
+                }}
+                onSuccess={(detail) => {
+                  setModalOpen(false);
+                  setAgendamentoEdit(null);
+                  setStatusMessage({
+                    type: 'success',
+                    message: `Agendamento atualizado com sucesso.${detail ?? ''}`,
+                  });
+                  fetchAgendamentos(pagination.currentPage, filtros);
+                }}
+              />
+            )}
+          </>
+        )}
+
+        {activeTab === 'kpis' && (
+          <>
+            <KPICards kpis={kpis} loading={kpisLoading} />
+            <Section $marginTop={20}>
+              <ChartJsBadge>
+                ChartJS
+              </ChartJsBadge>
+              <GraficosDashboard chartsData={chartsData} />
+            </Section>
+          </>
+        )}
+
+        {activeTab === 'integracoes' && (
+          <IntegrationsStatus />
+        )}
+
+        {activeTab === 'salas' && (user?.role === 'admin' || user?.role === 'superadmin') && (
           <Section $marginBottom={20}>
-            <AppoimentsFilters onApply={handleApplyFilters} />
+            <RoomRentalsPanel />
           </Section>
+        )}
 
-          <section>
-            {loading && <LoadingSpinner />}
+        {activeTab === 'chatbot' && (
+          <ChatbotContainer>
+            <ChatbotButton onClick={() => router.push('/chatbot')}>
+              Abrir Chatbot
+            </ChatbotButton>
+          </ChatbotContainer>
+        )}
 
-            <AppoimentsTable
-              agendamentos={appoiments}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-            />
+        {activeTab === 'chatbot-cadastros' && (user?.role === 'admin' || user?.role === 'superadmin') && (
+          <ChatbotCadastroPanel />
+        )}
 
-            <Pagination
-              currentPage={pagination.currentPage}
-              totalPages={pagination.totalPages}
-              onPageChange={goToPage}
-            />
-          </section>
+        {activeTab === 'whatsapp-chat' && (user?.role === 'admin' || user?.role === 'superadmin') && (
+          <WhatsAppChatPanel />
+        )}
 
-          {modalOpen && agendamentoEdit && (
-            <EditarAgendamentoModal
-              agendamento={agendamentoEdit}
-              onClose={() => {
-                setModalOpen(false);
-                setAgendamentoEdit(null);
-              }}
-              onSuccess={(detail) => {
-                setModalOpen(false);
-                setAgendamentoEdit(null);
-                setStatusMessage({
-                  type: 'success',
-                  message: `Agendamento atualizado com sucesso.${detail ?? ''}`,
-                });
-                fetchAgendamentos(pagination.currentPage, filtros);
-              }}
-            />
-          )}
-        </>
-      )}
+        {activeTab === 'whatsapp-mensagens' && (user?.role === 'admin' || user?.role === 'superadmin') && (
+          <>
+            <WhatsAppKPIsPanel />
+            <WhatsAppSection>
+              <WhatsAppMessagesPanel />
+            </WhatsAppSection>
+          </>
+        )}
 
-      {activeTab === 'kpis' && (
-        <>
-          <KPICards kpis={kpis} loading={kpisLoading} />
-          <Section $marginTop={20}>
-            <ChartJsBadge>
-              ChartJS
-            </ChartJsBadge>
-            <GraficosDashboard chartsData={chartsData} />
-          </Section>
-        </>
-      )}
+        {activeTab === 'whatsapp-contatos' && (user?.role === 'admin' || user?.role === 'superadmin') && (
+          <WhatsAppContactsPanel />
+        )}
 
-      {activeTab === 'integracoes' && (
-        <IntegrationsStatus />
-      )}
+        {activeTab === 'whatsapp-templates' && (user?.role === 'admin' || user?.role === 'superadmin') && (
+          <WhatsAppTemplatesPanel />
+        )}
 
-      {activeTab === 'salas' && (user?.role === 'admin' || user?.role === 'superadmin') && (
-        <Section $marginBottom={20}>
-          <RoomRentalsPanel />
-        </Section>
-      )}
+        {activeTab === 'whatsapp-conexao' && (user?.role === 'admin' || user?.role === 'superadmin') && (
+          <WhatsAppConfigPanel />
+        )}
 
-      {activeTab === 'chatbot' && (
-        <ChatbotContainer>
-          <ChatbotButton onClick={() => router.push('/chatbot')}>
-            Abrir Chatbot
-          </ChatbotButton>
-        </ChatbotContainer>
-      )}
-
-      {activeTab === 'chatbot-cadastros' && (user?.role === 'admin' || user?.role === 'superadmin') && (
-        <ChatbotCadastroPanel />
-      )}
-
-      {activeTab === 'whatsapp-chat' && (user?.role === 'admin' || user?.role === 'superadmin') && (
-        <WhatsAppChatPanel />
-      )}
-
-      {activeTab === 'whatsapp-mensagens' && (user?.role === 'admin' || user?.role === 'superadmin') && (
-        <>
-          <WhatsAppKPIsPanel />
-          <WhatsAppSection>
-            <WhatsAppMessagesPanel />
-          </WhatsAppSection>
-        </>
-      )}
-
-      {activeTab === 'whatsapp-contatos' && (user?.role === 'admin' || user?.role === 'superadmin') && (
-        <WhatsAppContactsPanel />
-      )}
-
-      {activeTab === 'whatsapp-templates' && (user?.role === 'admin' || user?.role === 'superadmin') && (
-        <WhatsAppTemplatesPanel />
-      )}
-
-      {activeTab === 'whatsapp-conexao' && (user?.role === 'admin' || user?.role === 'superadmin') && (
-        <WhatsAppConfigPanel />
-      )}
-
-      {activeTab === 'usuarios' && user?.role === 'superadmin' && (
-        <SuperadminUserCreator />
-      )}
-    </PageWrapper>
+        {activeTab === 'usuarios' && user?.role === 'superadmin' && (
+          <SuperadminUserCreator />
+        )}
+        </PageInner>
+      </PageWrapper>
+    </>
   );
 }

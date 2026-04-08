@@ -15,7 +15,7 @@ const AppWrapper = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  background: linear-gradient(135deg, #b861d7, #cd7cf0, #ba78e6, #ebc7ff, #f9edff);
+  background: linear-gradient(135deg, #7961d7, #cd7cf0, #ba78e6, #ebc7ff, #f9edff);
   background-size: 400% 400%;
   animation: ${gradientShift} 10s ease infinite;
 `;
