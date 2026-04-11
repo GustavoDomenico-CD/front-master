@@ -16,14 +16,111 @@ type CadastroRow = {
   status: string
   errorMessage: string | null
   createdAt: string
+  userId: number | null
   user: { id: number; email: string; role: string; name: string | null } | null
+}
+
+function str(v: unknown): string | null {
+  if (v == null) return null
+  const s = String(v).trim()
+  return s === '' ? null : s
+}
+
+function extractCadastroList(json: unknown): unknown[] {
+  if (Array.isArray(json)) return json
+  if (!json || typeof json !== 'object') return []
+  const o = json as Record<string, unknown>
+  if (Array.isArray(o.data)) return o.data
+  if (Array.isArray(o.cadastros)) return o.cadastros
+  if (Array.isArray(o.items)) return o.items
+  return []
+}
+
+function normalizeUserNested(u: unknown): CadastroRow['user'] {
+  if (!u || typeof u !== 'object') return null
+  const o = u as Record<string, unknown>
+  const idRaw = o.id
+  const id = typeof idRaw === 'number' ? idRaw : Number(idRaw)
+  if (!Number.isFinite(id)) return null
+  return {
+    id,
+    email: String(o.email ?? ''),
+    role: String(o.role ?? ''),
+    name: str(o.name),
+  }
+}
+
+function normalizeCadastroRow(raw: unknown, index: number): CadastroRow | null {
+  if (!raw || typeof raw !== 'object') return null
+  const o = raw as Record<string, unknown>
+  const idRaw = o.id
+  let id = typeof idRaw === 'number' ? idRaw : Number(idRaw)
+  if (!Number.isFinite(id)) id = index
+
+  const createdAt =
+    str(o.createdAt) ??
+    str(o.created_at) ??
+    str(o.createdAtUtc) ??
+    str(o.data_criacao) ??
+    ''
+
+  const statusRaw = str(o.status) ?? str(o.estado) ?? ''
+  const err =
+    str(o.errorMessage) ??
+    str(o.error_message) ??
+    str(o.mensagem_erro) ??
+    str(o.error) ??
+    null
+
+  const user = normalizeUserNested(o.user ?? o.User)
+  const userIdRaw = o.userId ?? o.user_id
+  const userIdNum = typeof userIdRaw === 'number' ? userIdRaw : Number(userIdRaw)
+  const userId = Number.isFinite(userIdNum) ? userIdNum : user?.id ?? null
+
+  const email = str(o.email) ?? '—'
+  const consultationType =
+    str(o.consultationType) ?? str(o.consultation_type) ?? str(o.tipo_consulta)
+  const consultationCategory =
+    str(o.consultationCategory) ?? str(o.consultation_category) ?? str(o.categoria)
+
+  return {
+    id,
+    email,
+    name: str(o.name) ?? str(o.nome),
+    phone: str(o.phone) ?? str(o.telefone) ?? str(o.phoneNumber),
+    consultationType,
+    consultationCategory,
+    role: String(o.role ?? ''),
+    status: statusRaw || '—',
+    errorMessage: err,
+    createdAt,
+    userId,
+    user,
+  }
+}
+
+function statusIsOk(status: string): boolean {
+  const s = status.toLowerCase()
+  return s === 'completed' || s === 'success' || s === 'sucesso' || s === 'concluido' || s === 'ok'
+}
+
+function formatCreatedAt(iso: string): string {
+  if (!iso) return '—'
+  const d = new Date(iso)
+  return Number.isNaN(d.getTime()) ? iso : d.toLocaleString('pt-BR')
+}
+
+function previewText(value: string | null, max: number): { text: string; truncated: boolean } {
+  if (value == null || value === '') return { text: '—', truncated: false }
+  const truncated = value.length > max
+  return { text: truncated ? `${value.slice(0, max)}…` : value, truncated }
 }
 
 const Wrap = styled.div`
   margin-top: 16px;
   background: white;
-  border-radius: ${theme.radius.md};
-  box-shadow: ${theme.shadow.md};
+  border-radius: ${theme.radius.lg};
+  box-shadow: ${theme.shadow.table};
   overflow: auto;
 `
 
@@ -84,16 +181,26 @@ export default function ChatbotCadastroPanel() {
     setError(null)
     try {
       const res = await fetch('/api/admin/chatbot-cadastros?limit=200', { credentials: 'include' })
-      const data = (await res.json().catch(() => ({}))) as {
-        status?: string
-        data?: CadastroRow[]
-        mensagem?: string
+      const data = (await res.json().catch(() => ({}))) as Record<string, unknown>
+      const list = extractCadastroList(data)
+      if (!res.ok) {
+        const msg =
+          str(data.mensagem) ??
+          str(data.message) ??
+          str(data.error) ??
+          'Não foi possível carregar os cadastros.'
+        throw new Error(msg ?? 'Não foi possível carregar os cadastros.')
       }
-      const st = (data.status ?? '').toLowerCase()
-      if (!res.ok || (st !== 'sucesso' && st !== 'success') || !Array.isArray(data.data)) {
-        throw new Error(data.mensagem ?? 'Não foi possível carregar os cadastros.')
+      const st = String(data.status ?? '').toLowerCase()
+      if (st === 'erro' || st === 'error' || st === 'falha') {
+        throw new Error(
+          str(data.mensagem) ?? str(data.message) ?? 'Não foi possível carregar os cadastros.',
+        )
       }
-      setRows(data.data)
+      const normalized = list
+        .map((item, i) => normalizeCadastroRow(item, i))
+        .filter((r): r is CadastroRow => r != null)
+      setRows(normalized)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Erro ao carregar.')
       setRows([])
@@ -138,27 +245,28 @@ export default function ChatbotCadastroPanel() {
                   </td>
                 </tr>
               ) : (
-                rows.map((r) => (
-                  <tr key={r.id}>
-                    <td>{new Date(r.createdAt).toLocaleString('pt-BR')}</td>
-                    <td>{r.email}</td>
-                    <td>{r.name ?? '—'}</td>
-                    <td>{r.phone ?? '—'}</td>
-                    <td title={r.consultationType ?? ''}>
-                      {(r.consultationType ?? '—').slice(0, 40)}
-                      {(r.consultationType?.length ?? 0) > 40 ? '…' : ''}
-                    </td>
-                    <td>
-                      <Badge $ok={r.status === 'completed'}>{r.status}</Badge>
-                      {r.errorMessage ? (
-                        <span style={{ display: 'block', fontSize: 11, color: '#991b1b', marginTop: 4 }}>
-                          {r.errorMessage.slice(0, 120)}
-                        </span>
-                      ) : null}
-                    </td>
-                    <td>{r.user?.id ?? '—'}</td>
-                  </tr>
-                ))
+                rows.map((r) => {
+                  const consulta = previewText(r.consultationType, 40)
+                  const errPreview = r.errorMessage ? previewText(r.errorMessage, 120) : { text: '', truncated: false }
+                  return (
+                    <tr key={`${r.id}-${r.email}-${r.createdAt}`}>
+                      <td>{formatCreatedAt(r.createdAt)}</td>
+                      <td>{r.email}</td>
+                      <td>{r.name ?? '—'}</td>
+                      <td>{r.phone ?? '—'}</td>
+                      <td title={r.consultationType ?? ''}>{consulta.text}</td>
+                      <td>
+                        <Badge $ok={statusIsOk(r.status)}>{r.status}</Badge>
+                        {errPreview.text ? (
+                          <span style={{ display: 'block', fontSize: 11, color: '#991b1b', marginTop: 4 }}>
+                            {errPreview.text}
+                          </span>
+                        ) : null}
+                      </td>
+                      <td>{r.user?.id ?? r.userId ?? '—'}</td>
+                    </tr>
+                  )
+                })
               )}
             </tbody>
           </Table>

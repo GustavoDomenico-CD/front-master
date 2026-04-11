@@ -2,13 +2,15 @@
 
 import { useEffect, useState } from 'react'
 import styled from 'styled-components'
+import { theme } from '@/app/styles/theme'
 
 const Card = styled.section`
   background: white;
-  border: 1px solid #e5e7eb;
+  border: 1px solid rgba(15, 23, 42, 0.08);
   border-radius: 12px;
   padding: 18px;
   margin-top: 18px;
+  box-shadow: ${theme.shadow.table};
 `
 
 const Title = styled.h3`
@@ -60,7 +62,11 @@ const Info = styled.p<{ $error?: boolean }>`
   color: ${(p) => (p.$error ? '#b91c1c' : '#374151')};
 `
 
-export default function SuperadminUserCreator() {
+type SuperadminUserCreatorProps = {
+  onCreated?: () => void
+}
+
+export default function SuperadminUserCreator({ onCreated }: SuperadminUserCreatorProps) {
   const [roles, setRoles] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
@@ -113,6 +119,7 @@ export default function SuperadminUserCreator() {
 
       setMessage(`Usuário criado com role "${data.role ?? form.role}".`)
       setForm((p) => ({ ...p, email: '', password: '', name: '' }))
+      onCreated?.()
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Falha ao criar usuário')
     } finally {

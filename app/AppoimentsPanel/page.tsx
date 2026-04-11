@@ -28,8 +28,10 @@ import WhatsAppTemplatesPanel from '@/app/shared/WhatsAppTemplatesPanel';
 import WhatsAppKPIsPanel from '@/app/shared/WhatsAppKPIsPanel';
 import WhatsAppChatPanel from '@/app/shared/WhatsAppChatPanel';
 import SuperadminUserCreator from '@/app/shared/SuperadminUserCreator';
+import UsersManagementPanel from '@/app/shared/UsersManagementPanel';
 import ChatbotCadastroPanel from '@/app/shared/ChatbotCadastroPanel';
 import RoomRentalsPanel from '@/app/shared/RoomRentalsPanel';
+import { theme } from '@/app/styles/theme';
 
 // Offset main content so it doesn't hide behind the collapsed sidebar
 const PageWrapper = styled.div`
@@ -39,6 +41,8 @@ const PageWrapper = styled.div`
   justify-content: center;
   padding: 24px 24px 24px 32px;
   transition: margin-left 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  background: ${theme.panel.pageBackground};
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
 `
 
 const PageInner = styled.div`
@@ -51,8 +55,13 @@ const PageHeader = styled.header`
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid #e5e7eb;
+  padding: 16px 20px;
+  margin-left: -4px;
+  margin-right: -4px;
+  border-radius: ${theme.radius.lg};
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  box-shadow: ${theme.shadow.sm};
 `
 
 const PageTitle = styled.h1`
@@ -74,13 +83,18 @@ const RoleBadge = styled.span<{ $isAdmin: boolean }>`
 
 const LogoutButton = styled.button`
   padding: 8px 16px;
-  background: #f3f4f6;
-  border: none;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(15, 23, 42, 0.08);
   border-radius: 8px;
   font-size: 14px;
   font-weight: 600;
   color: #374151;
   cursor: pointer;
+  box-shadow: ${theme.shadow.sm};
+  &:hover {
+    background: #fff;
+    border-color: rgba(15, 23, 42, 0.12);
+  }
 `
 
 const Section = styled.section<{ $marginBottom?: number; $marginTop?: number }>`
@@ -148,6 +162,7 @@ export default function AppoimentsPanel() {
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [agendamentoEdit, setAgendamentoEdit] = useState<Appointment | null>(null);
+  const [usersTableKey, setUsersTableKey] = useState(0);
 
   const { pagination, goToPage } = usePagination({ pageSize: 15 });
   const displayName = (user?.username || '').split('@')[0] || 'usuario';
@@ -337,8 +352,16 @@ export default function AppoimentsPanel() {
           <WhatsAppConfigPanel />
         )}
 
-        {activeTab === 'usuarios' && user?.role === 'superadmin' && (
-          <SuperadminUserCreator />
+        {activeTab === 'usuarios' && (user?.role === 'admin' || user?.role === 'superadmin') && (
+          <Section $marginBottom={24}>
+            <UsersManagementPanel
+              key={usersTableKey}
+              canEdit={user?.role === 'superadmin'}
+            />
+            {user?.role === 'superadmin' && (
+              <SuperadminUserCreator onCreated={() => setUsersTableKey((k) => k + 1)} />
+            )}
+          </Section>
         )}
         </PageInner>
       </PageWrapper>

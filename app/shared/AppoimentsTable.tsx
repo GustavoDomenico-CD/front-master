@@ -6,8 +6,8 @@ import { theme } from "../styles/theme";
 
 const TableContainer = styled.div`
   background: white;
-  border-radius: ${theme.radius.md};
-  box-shadow: ${theme.shadow.md};
+  border-radius: ${theme.radius.lg};
+  box-shadow: ${theme.shadow.table};
   overflow: hidden;
   margin-top: 20px;
 `;

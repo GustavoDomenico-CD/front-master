@@ -12,6 +12,7 @@ import {
   updateRoomLease,
 } from '@/app/lib/backend'
 import type { RoomDefinition, RoomLease, RoomRentalsPayload } from '@/app/types/room-rentals'
+import { theme } from '@/app/styles/theme'
 
 const Wrap = styled.div`
   display: flex;
@@ -22,8 +23,8 @@ const Wrap = styled.div`
 const Section = styled.section`
   background: #fff;
   border-radius: 12px;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: ${theme.shadow.md};
   padding: 20px;
 `
 
@@ -42,8 +43,10 @@ const SectionDesc = styled.p`
 
 const TableWrap = styled.div`
   overflow-x: auto;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  border-radius: ${theme.radius.md};
+  background: #fff;
+  box-shadow: ${theme.shadow.table};
 `
 
 const Table = styled.table`
