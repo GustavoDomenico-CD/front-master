@@ -15,7 +15,15 @@ const AppWrapper = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  background: linear-gradient(135deg, #7961d7, #cd7cf0, #ba78e6, #ebc7ff, #f9edff);
+  background: linear-gradient(
+    135deg,
+    #f0f7ff 0%,
+    #e0f2fe 22%,
+    #dbeafe 44%,
+    #cfe8fc 66%,
+    #e8f4fc 88%,
+    #f5f9ff 100%
+  );
   background-size: 400% 400%;
   animation: ${gradientShift} 10s ease infinite;
 `;
@@ -63,7 +71,7 @@ const InputWrapper = styled.div`
   align-items: center;
   gap: 8px;
   padding: 0 15px;
-  background-color: #eee2f7;
+  background-color: #e8f1fc;
   border-radius: 6px;
 
   input {
@@ -84,14 +92,14 @@ const Button = styled.button<{ $outlined?: boolean }>`
   border-radius: 5px;
   cursor: pointer;
   margin-top: 10px;
-  background-color: ${({ $outlined }) => ($outlined ? "transparent" : "#b441c5")};
+  background-color: ${({ $outlined }) => ($outlined ? "transparent" : "#2563eb")};
   color: white;
   transition: all 0.3s ease;
 
   &:hover {
-    background-color: ${({ $outlined }) => ($outlined ? "white" : "#a032b0")};
-    color: ${({ $outlined }) => ($outlined ? "#b441c5" : "white")};
-    box-shadow: 0 0 15px rgba(184, 65, 197, 0.6);
+    background-color: ${({ $outlined }) => ($outlined ? "white" : "#1d4ed8")};
+    color: ${({ $outlined }) => ($outlined ? "#2563eb" : "white")};
+    box-shadow: 0 0 15px rgba(37, 99, 235, 0.45);
     transform: scale(1.05);
   }
 `;
