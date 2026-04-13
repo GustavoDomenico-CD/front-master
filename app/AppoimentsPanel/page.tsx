@@ -18,7 +18,8 @@ import Pagination from '@/app/shared/Pagination';
 import { usePagination } from '@/app/hooks/usePagination';
 import GraficosDashboard from '@/app/shared/GraphsDashboard';
 import EditarAgendamentoModal from '@/app/shared/AppoimentsEditModal';
-import { postLogout } from '@/app/lib/backend';
+import { deleteAppointment, postLogout } from '@/app/lib/backend';
+import { can } from '@/app/lib/authz';
 import DashboardTabs, { SIDEBAR_COLLAPSED } from '@/app/shared/DashboardTabs';
 import type { TabItem } from '@/app/shared/DashboardTabs';
 import WhatsAppConfigPanel from '@/app/shared/WhatsAppConfigPanel';
@@ -140,15 +141,15 @@ const TABS: TabItem[] = [
   { id: 'agendamentos', label: 'Agendamentos' },
   { id: 'kpis', label: 'KPIs & Graficos' },
   { id: 'integracoes', label: 'Integracoes' },
-  { id: 'salas', label: 'Aluguel de salas', adminOnly: true },
+  { id: 'salas', label: 'Aluguel de salas', requiredPermission: 'room-rentals:manage' },
   { id: 'chatbot', label: 'Chatbot' },
-  { id: 'chatbot-cadastros', label: 'Cadastros chatbot', adminOnly: true },
-  { id: 'whatsapp-chat', label: 'WhatsApp Chat', adminOnly: true },
-  { id: 'whatsapp-mensagens', label: 'WhatsApp Mensagens', adminOnly: true },
-  { id: 'whatsapp-contatos', label: 'WhatsApp Contatos', adminOnly: true },
-  { id: 'whatsapp-templates', label: 'WhatsApp Templates', adminOnly: true },
-  { id: 'whatsapp-conexao', label: 'WhatsApp Conexão', adminOnly: true },
-  { id: 'usuarios', label: 'Usuarios', adminOnly: true },
+  { id: 'chatbot-cadastros', label: 'Cadastros chatbot', requiredPermission: 'chatbot:manage' },
+  { id: 'whatsapp-chat', label: 'WhatsApp Chat', requiredPermission: 'whatsapp:manage' },
+  { id: 'whatsapp-mensagens', label: 'WhatsApp Mensagens', requiredPermission: 'whatsapp:manage' },
+  { id: 'whatsapp-contatos', label: 'WhatsApp Contatos', requiredPermission: 'whatsapp:manage' },
+  { id: 'whatsapp-templates', label: 'WhatsApp Templates', requiredPermission: 'whatsapp:manage' },
+  { id: 'whatsapp-conexao', label: 'WhatsApp Conexão', requiredPermission: 'whatsapp:manage' },
+  { id: 'usuarios', label: 'Usuarios', requiredPermission: 'users:view' },
 ];
 
 export default function AppoimentsPanel() {
@@ -196,8 +197,7 @@ export default function AppoimentsPanel() {
   const handleDelete = async (id: string) => {
     if (!confirm('Confirmar exclusao deste agendamento?')) return;
     try {
-      const res = await fetch(`/api/admin/${id}/delete`, { method: 'DELETE' });
-      if (!res.ok) throw new Error('Erro ao excluir');
+      await deleteAppointment(id);
       setStatusMessage({ type: 'success', message: 'Agendamento excluido com sucesso.' });
       fetchAgendamentos(pagination.currentPage, filtros);
     } catch {
@@ -222,6 +222,7 @@ export default function AppoimentsPanel() {
         activeTab={activeTab}
         onTabChange={setActiveTab}
         userRole={user?.role}
+        userPermissions={user?.permissions}
       />
 
       <PageWrapper>
@@ -309,7 +310,7 @@ export default function AppoimentsPanel() {
           <IntegrationsStatus />
         )}
 
-        {activeTab === 'salas' && (user?.role === 'admin' || user?.role === 'superadmin') && (
+        {activeTab === 'salas' && can(user, 'room-rentals:manage') && (
           <Section $marginBottom={20}>
             <RoomRentalsPanel />
           </Section>
@@ -323,15 +324,15 @@ export default function AppoimentsPanel() {
           </ChatbotContainer>
         )}
 
-        {activeTab === 'chatbot-cadastros' && (user?.role === 'admin' || user?.role === 'superadmin') && (
+        {activeTab === 'chatbot-cadastros' && can(user, 'chatbot:manage') && (
           <ChatbotCadastroPanel />
         )}
 
-        {activeTab === 'whatsapp-chat' && (user?.role === 'admin' || user?.role === 'superadmin') && (
+        {activeTab === 'whatsapp-chat' && can(user, 'whatsapp:manage') && (
           <WhatsAppChatPanel />
         )}
 
-        {activeTab === 'whatsapp-mensagens' && (user?.role === 'admin' || user?.role === 'superadmin') && (
+        {activeTab === 'whatsapp-mensagens' && can(user, 'whatsapp:manage') && (
           <>
             <WhatsAppKPIsPanel />
             <WhatsAppSection>
@@ -340,25 +341,25 @@ export default function AppoimentsPanel() {
           </>
         )}
 
-        {activeTab === 'whatsapp-contatos' && (user?.role === 'admin' || user?.role === 'superadmin') && (
+        {activeTab === 'whatsapp-contatos' && can(user, 'whatsapp:manage') && (
           <WhatsAppContactsPanel />
         )}
 
-        {activeTab === 'whatsapp-templates' && (user?.role === 'admin' || user?.role === 'superadmin') && (
+        {activeTab === 'whatsapp-templates' && can(user, 'whatsapp:manage') && (
           <WhatsAppTemplatesPanel />
         )}
 
-        {activeTab === 'whatsapp-conexao' && (user?.role === 'admin' || user?.role === 'superadmin') && (
+        {activeTab === 'whatsapp-conexao' && can(user, 'whatsapp:manage') && (
           <WhatsAppConfigPanel />
         )}
 
-        {activeTab === 'usuarios' && (user?.role === 'admin' || user?.role === 'superadmin') && (
+        {activeTab === 'usuarios' && can(user, 'users:view') && (
           <Section $marginBottom={24}>
             <UsersManagementPanel
               key={usersTableKey}
-              canEdit={user?.role === 'superadmin'}
+              canEdit={can(user, 'users:edit')}
             />
-            {user?.role === 'superadmin' && (
+            {can(user, 'users:edit') && (
               <SuperadminUserCreator onCreated={() => setUsersTableKey((k) => k + 1)} />
             )}
           </Section>

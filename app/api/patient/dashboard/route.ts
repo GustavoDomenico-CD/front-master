@@ -31,7 +31,13 @@ type ListaBody = {
   mensagem?: string
 }
 
-/** Painel do paciente: sessão + agendamentos filtrados pelo e-mail do usuário. */
+/**
+ * Monta o dashboard de paciente autenticado.
+ * Regras:
+ * - exige sessão válida;
+ * - permite apenas role `paciente`;
+ * - busca agendamentos no backend e filtra por e-mail do perfil logado.
+ */
 export async function GET(request: Request) {
   try {
     const cookies = await getCookieHeader(request)

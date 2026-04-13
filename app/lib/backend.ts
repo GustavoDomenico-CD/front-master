@@ -74,6 +74,18 @@ export interface AppointmentsListSuccess {
   mensagem?: string
 }
 
+export class ApiError extends Error {
+  status: number
+  payload?: Record<string, unknown>
+
+  constructor(message: string, status: number, payload?: Record<string, unknown>) {
+    super(message)
+    this.name = 'ApiError'
+    this.status = status
+    this.payload = payload
+  }
+}
+
 function clientHeaders(init?: RequestInit): HeadersInit {
   const headers = new Headers(init?.headers)
   if (!(init?.body instanceof FormData) && !headers.has('Content-Type')) {
@@ -88,6 +100,34 @@ export async function apiRequest(path: string, init: RequestInit = {}): Promise<
     credentials: 'include',
     headers: clientHeaders(init),
   })
+}
+
+/** Faz parse tolerante de JSON para respostas de API inconsistentes. */
+export async function parseApiObject(res: Response): Promise<Record<string, unknown>> {
+  return (await res.json().catch(() => ({}))) as Record<string, unknown>
+}
+
+/** Extrai uma mensagem de erro padrão em payloads heterogêneos. */
+export function extractApiMessage(
+  payload: Record<string, unknown>,
+  fallback: string
+): string {
+  if (typeof payload.message === 'string' && payload.message.trim()) return payload.message
+  if (typeof payload.mensagem === 'string' && payload.mensagem.trim()) return payload.mensagem
+  if (typeof payload.error === 'string' && payload.error.trim()) return payload.error
+  return fallback
+}
+
+/** Lança ApiError quando o status HTTP não é de sucesso. */
+export async function ensureApiSuccess(
+  res: Response,
+  fallback: string
+): Promise<Record<string, unknown>> {
+  const payload = await parseApiObject(res)
+  if (!res.ok) {
+    throw new ApiError(extractApiMessage(payload, fallback), res.status, payload)
+  }
+  return payload
 }
 
 export function buildAppointmentsListSearchParams(

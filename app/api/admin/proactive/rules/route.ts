@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server'
 import { backendFetch, getCookieHeader } from '@/app/lib/backend-server'
+import { requirePermission } from '@/app/lib/require-permission'
 
 export async function GET(request: Request) {
+  const allowed = await requirePermission(request, ['chatbot:manage'])
+  if (!allowed.ok) return allowed.response
   try {
     const { searchParams } = new URL(request.url)
     const userId = searchParams.get('userId') ?? ''
@@ -27,6 +30,8 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const allowed = await requirePermission(request, ['chatbot:manage'])
+  if (!allowed.ok) return allowed.response
   try {
     const body = await request.json()
     const cookies = await getCookieHeader(request)

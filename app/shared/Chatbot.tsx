@@ -3,6 +3,14 @@ import React, { useState, useEffect, useRef } from 'react'
 import styled, { keyframes } from 'styled-components'
 import { theme } from '@/app/styles/theme'
 import { postLogout } from '@/app/lib/backend'
+import {
+  checkProactiveMessages as checkProactiveMessagesApi,
+  createChatbotAppointment,
+  fetchProactiveRules as fetchProactiveRulesApi,
+  mutateProactiveRules,
+  registerPatientByChatbot,
+  searchChatbot,
+} from '@/app/lib/chatbot-api'
 
 interface Message {
   text: string
@@ -665,13 +673,7 @@ export default function ChatManager({ apiBaseUrl = '', userId, principal: _princ
     }
     setTypingIndicator(true)
     try {
-      const res = await fetch('/api/admin/chatbot/search', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ query: message, source: 'both' }),
-      })
-      const json = (await res.json().catch(() => ({}))) as {
+      const json = (await searchChatbot(message)) as {
         status?: string
         data?: {
           db?: Array<{
@@ -692,7 +694,7 @@ export default function ChatManager({ apiBaseUrl = '', userId, principal: _princ
         mensagem?: string
       }
 
-      if (!res.ok || json.status !== 'sucesso') {
+      if (json.status !== 'sucesso') {
         addMessage(json.mensagem ?? 'Não foi possível processar sua mensagem.', false)
         return
       }
@@ -761,26 +763,18 @@ export default function ChatManager({ apiBaseUrl = '', userId, principal: _princ
 
     setPatientLoading(true)
     try {
-      const res = await fetch('/api/chatbot/cadastro', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          email,
-          password,
-          name: patientForm.name.trim() || undefined,
-          phone: patientForm.phone.trim() || undefined,
-          consultationType: patientForm.consultationType.trim() || undefined,
-          consultationCategory: 'odontologia',
-        }),
-      })
-
-      const data = (await res.json().catch(() => ({}))) as {
+      const data = (await registerPatientByChatbot({
+        email,
+        password,
+        name: patientForm.name.trim() || undefined,
+        phone: patientForm.phone.trim() || undefined,
+        consultationType: patientForm.consultationType.trim() || undefined,
+        consultationCategory: 'odontologia',
+      })) as {
         success?: boolean
         message?: string
       }
-
-      if (!res.ok || !data.success) {
+      if (!data.success) {
         throw new Error(data.message || 'Falha ao cadastrar paciente.')
       }
 
@@ -850,20 +844,14 @@ export default function ChatManager({ apiBaseUrl = '', userId, principal: _princ
         },
       }
 
-      const res = await fetch('/api/admin/appoiments/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(payload),
-      })
-      const data = (await res.json().catch(() => ({}))) as {
+      const data = (await createChatbotAppointment(payload)) as {
         status?: string
         success?: boolean
         mensagem?: string
         message?: string
       }
 
-      const ok = res.ok && (data.success === true || data.status === 'sucesso' || data.status === 'success')
+      const ok = data.success === true || data.status === 'sucesso' || data.status === 'success'
       if (!ok) {
         throw new Error(data.mensagem || data.message || 'Nao foi possivel concluir o agendamento.')
       }
@@ -902,10 +890,7 @@ export default function ChatManager({ apiBaseUrl = '', userId, principal: _princ
   const fetchProactiveRules = async () => {
     if (!userId) return
     try {
-      const res = await fetch(`/api/admin/proactive/rules?userId=${userId}`, {
-        credentials: 'include',
-      })
-      const data = await res.json()
+      const data = await fetchProactiveRulesApi(userId)
       if (data.status === 'sucesso' && Array.isArray(data.data)) {
         setProactiveRules(data.data)
       }
@@ -917,10 +902,7 @@ export default function ChatManager({ apiBaseUrl = '', userId, principal: _princ
   const checkProactiveMessages = async () => {
     if (!userId) return
     try {
-      const res = await fetch(`/api/admin/proactive/check?userId=${userId}`, {
-        credentials: 'include',
-      })
-      const data = await res.json()
+      const data = await checkProactiveMessagesApi(userId)
       if (data.status === 'sucesso' && Array.isArray(data.data)) {
         for (const msg of data.data) {
           addMessage(msg.message, false, {}, true)
@@ -947,18 +929,12 @@ export default function ChatManager({ apiBaseUrl = '', userId, principal: _princ
       }
     }
     try {
-      const res = await fetch('/api/admin/proactive/rules', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId,
-          trigger: newRuleTrigger,
-          condition,
-          message: newRuleMessage.trim(),
-        }),
+      const data = await mutateProactiveRules({
+        userId,
+        trigger: newRuleTrigger,
+        condition,
+        message: newRuleMessage.trim(),
       })
-      const data = await res.json()
       if (data.status === 'sucesso') {
         setNewRuleMessage('')
         setNewRuleCondition('')
@@ -972,12 +948,7 @@ export default function ChatManager({ apiBaseUrl = '', userId, principal: _princ
 
   const toggleProactiveRule = async (ruleId: number) => {
     try {
-      await fetch(`/api/admin/proactive/rules`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ _action: 'toggle', ruleId }),
-      })
+      await mutateProactiveRules({ _action: 'toggle', ruleId })
       setProactiveRules((prev) =>
         prev.map((r) => (r.id === ruleId ? { ...r, isActive: !r.isActive } : r)),
       )
@@ -988,12 +959,7 @@ export default function ChatManager({ apiBaseUrl = '', userId, principal: _princ
 
   const deleteProactiveRule = async (ruleId: number) => {
     try {
-      await fetch(`/api/admin/proactive/rules`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ _action: 'delete', ruleId }),
-      })
+      await mutateProactiveRules({ _action: 'delete', ruleId })
       setProactiveRules((prev) => prev.filter((r) => r.id !== ruleId))
     } catch (err) {
       console.error('Erro ao remover regra proativa:', err)
@@ -1046,7 +1012,7 @@ export default function ChatManager({ apiBaseUrl = '', userId, principal: _princ
       <Header>
         <Avatar src="/vercel.svg" alt="Assistente virtual" />
         <HeaderText>
-          <Title>Gustavinho</Title>
+          <Title>Agente Virtual</Title>
           <Subtitle>Seu Agente Virtual da Edge Machine</Subtitle>
         </HeaderText>
         {userId && (

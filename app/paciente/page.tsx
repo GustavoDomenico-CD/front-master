@@ -6,7 +6,9 @@ import styled from 'styled-components'
 
 import PatientDashboard from '@/app/shared/PatientDashboard'
 import LoadingSpinner from '@/app/shared/LoadingSpinner'
-import { apiRequest, checkSession, postLogout } from '@/app/lib/backend'
+import { checkSession, postLogout } from '@/app/lib/backend'
+import { fetchPatientDashboard } from '@/app/lib/patient-api'
+import { can } from '@/app/lib/authz'
 import type { PatientDashboardData } from '@/app/types/patient'
 
 const Shell = styled.div`
@@ -48,16 +50,6 @@ const ErrorBox = styled.div`
   text-align: center;
 `
 
-async function fetchPatientDashboard(): Promise<PatientDashboardData> {
-  const res = await apiRequest('/api/patient/dashboard')
-  const data = await res.json().catch(() => ({}))
-  if (!res.ok) {
-    const msg = typeof data.error === 'string' ? data.error : 'Erro ao carregar painel.'
-    throw new Error(msg)
-  }
-  return data as PatientDashboardData
-}
-
 export default function PacientePage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
@@ -84,8 +76,7 @@ export default function PacientePage() {
     ;(async () => {
       try {
         const u = await checkSession()
-        const r = (u.role ?? '').toLowerCase()
-        if (r !== 'paciente') {
+        if (!can(u, 'patient:access')) {
           if (!cancelled) setLoading(false)
           router.replace('/painel-agendamento')
           return

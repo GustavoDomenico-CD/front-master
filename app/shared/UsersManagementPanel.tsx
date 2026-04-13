@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import styled from 'styled-components'
 import { theme } from '@/app/styles/theme'
 import LoadingSpinner from '@/app/shared/LoadingSpinner'
+import { fetchAvailableRoles, fetchUsersList, patchUser } from '@/app/lib/users-api'
 
 export type UsersManagementPanelProps = {
   canEdit: boolean
@@ -181,9 +182,8 @@ export default function UsersManagementPanel({
   const loadRoles = useCallback(async () => {
     if (!canEdit) return
     try {
-      const res = await fetch('/api/users/roles', { credentials: 'include' })
-      const data = await res.json().catch(() => [])
-      if (res.ok && Array.isArray(data)) setRoles(data)
+      const data = await fetchAvailableRoles()
+      if (Array.isArray(data)) setRoles(data)
     } catch {
       // ignore
     }
@@ -193,19 +193,7 @@ export default function UsersManagementPanel({
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch('/api/users', { credentials: 'include' })
-      const data = await res.json().catch(() => ({}))
-      if (!res.ok) {
-        const msg =
-          typeof (data as { message?: string }).message === 'string'
-            ? (data as { message: string }).message
-            : typeof (data as { mensagem?: string }).mensagem === 'string'
-              ? (data as { mensagem: string }).mensagem
-              : typeof (data as { error?: string }).error === 'string'
-                ? (data as { error: string }).error
-                : 'Não foi possível carregar os usuários.'
-        throw new Error(msg)
-      }
+      const data = await fetchUsersList()
       const list = extractUsersList(data)
       const next = list
         .map((item) =>
@@ -252,26 +240,12 @@ export default function UsersManagementPanel({
     setSaving(true)
     setSaveErr(null)
     try {
-      const res = await fetch(`/api/users/${encodeURIComponent(String(editId))}`, {
-        method: 'PATCH',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: draft.name.trim() || undefined,
-          role: draft.role || undefined,
-          email: draft.email.trim() || undefined,
-          is_active: draft.isActive,
-        }),
+      await patchUser(editId, {
+        name: draft.name.trim() || undefined,
+        role: draft.role || undefined,
+        email: draft.email.trim() || undefined,
+        is_active: draft.isActive,
       })
-      const data = await res.json().catch(() => ({}))
-      if (!res.ok) {
-        throw new Error(
-          (data as { message?: string }).message ??
-            (data as { mensagem?: string }).mensagem ??
-            (data as { error?: string }).error ??
-            'Falha ao atualizar usuário.',
-        )
-      }
       setEditId(null)
       await load()
       onListChanged?.()

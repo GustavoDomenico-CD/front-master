@@ -18,6 +18,10 @@ type AdminAppointmentRow = {
   observations?: string
 }
 
+/**
+ * Normaliza os status vindos de diferentes backends/idiomas para o
+ * contrato único usado no dashboard do paciente.
+ */
 export function mapAppointmentStatus(raw?: string): PatientAppointment['status'] {
   const x = (raw ?? '')
     .toLowerCase()
@@ -32,6 +36,10 @@ function hourLabel(h: number): string {
   return `${String(Number(h) || 0).padStart(2, '0')}:00`
 }
 
+/**
+ * Constrói o payload completo do dashboard do paciente a partir do perfil
+ * autenticado e da listagem de agendamentos já filtrada por e-mail.
+ */
 export function buildPatientDashboardFromAppointments(
   profile: {
     id: number

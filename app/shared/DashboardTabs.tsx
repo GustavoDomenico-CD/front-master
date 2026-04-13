@@ -17,11 +17,13 @@ import {
   UserCog,
   LucideIcon,
 } from 'lucide-react'
+import { can } from '@/app/lib/authz'
 
 export interface TabItem {
   id: string
   label: string
   adminOnly?: boolean
+  requiredPermission?: string
   icon?: LucideIcon
 }
 
@@ -30,6 +32,7 @@ interface DashboardTabsProps {
   activeTab: string
   onTabChange: (tabId: string) => void
   userRole?: string
+  userPermissions?: string[]
 }
 
 const TAB_ICONS: Record<string, LucideIcon> = {
@@ -182,7 +185,7 @@ const Tooltip = styled.div`
   animation: ${fadeIn} 0.12s ease;
 `
 
-export default function DashboardTabs({ tabs, activeTab, onTabChange, userRole }: DashboardTabsProps) {
+export default function DashboardTabs({ tabs, activeTab, onTabChange, userRole, userPermissions }: DashboardTabsProps) {
   const [expanded, setExpanded] = useState(false)
   const [tooltip, setTooltip] = useState<{ label: string; y: number } | null>(null)
   const hoverTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -191,9 +194,12 @@ export default function DashboardTabs({ tabs, activeTab, onTabChange, userRole }
     () =>
       tabs.filter(t => {
         if (t.adminOnly && userRole !== 'admin' && userRole !== 'superadmin') return false
+        if (t.requiredPermission && !can({ role: userRole, permissions: userPermissions }, t.requiredPermission)) {
+          return false
+        }
         return true
       }),
-    [tabs, userRole]
+    [tabs, userRole, userPermissions]
   )
 
   const handleMouseEnter = () => {
